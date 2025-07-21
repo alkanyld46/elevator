@@ -15,7 +15,6 @@ function App() {
   return (
     <BrowserRouter>
       {token && <NavBar />}
-
       <Routes>
         <Route path="/login" element={<Login />} />
         {token && user.role === 'admin' && (
