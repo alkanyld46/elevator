@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import api from '../utils/api'
 
 export default function Register() {
@@ -7,6 +8,13 @@ export default function Register() {
   const [password, setPassword] = useState('')
   const [role, setRole] = useState('tech')
   const [msg, setMsg] = useState('')
+  const navigate = useNavigate()
+
+  const logout = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    navigate('/login')
+  }
 
   const submit = async e => {
     e.preventDefault()
@@ -20,8 +28,12 @@ export default function Register() {
   }
 
   return (
-    <div style={{ maxWidth: 400, margin: 'auto', padding: 20 }}>
+    <div className="container" style={{ maxWidth: 400 }}>
       <h2>Create User</h2>
+      <div style={{ marginBottom: 10 }}>
+        <button onClick={() => navigate('/admin')}>Back</button>
+        <button style={{ marginLeft: 10 }} onClick={logout}>Logout</button>
+      </div>
       {msg && <p>{msg}</p>}
       <form onSubmit={submit}>
         <div>
@@ -43,8 +55,10 @@ export default function Register() {
             <option value="admin">Admin</option>
           </select>
         </div>
-        <button type="submit" style={{ marginTop: 10 }}>Create</button>
-      </form>
+        <button type="submit" className="primary-btn" style={{ marginTop: 10 }}>
+        Create
+        </button>  
+        </form>
     </div>
   )
 }

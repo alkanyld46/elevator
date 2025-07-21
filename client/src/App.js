@@ -5,6 +5,8 @@ import Register from './pages/Register'
 import Scanner from './components/Scanner'
 import Dashboard from './pages/Dashboard'
 import TechHome from './pages/TechHome'
+import Elevators from './pages/Elevators'
+import NavBar from './components/NavBar'
 
 function App() {
   const token = localStorage.getItem('token')
@@ -12,6 +14,8 @@ function App() {
 
   return (
     <BrowserRouter>
+      {token && <NavBar />}
+
       <Routes>
         <Route path="/login" element={<Login />} />
         {token && user.role === 'admin' && (
@@ -22,7 +26,12 @@ function App() {
           <>
             <Route path="/tech" element={<TechHome />} />
             <Route path="/scanner" element={<Scanner />} />
-            {user.role === 'admin' && <Route path="/admin" element={<Dashboard />} />}
+            {user.role === 'admin' && (
+              <>
+                <Route path="/admin" element={<Dashboard />} />
+                <Route path="/elevators" element={<Elevators />} />
+              </>
+            )}
             <Route
               path="*"
               element={

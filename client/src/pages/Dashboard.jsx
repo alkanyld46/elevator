@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import api from '../utils/api'
 import { format } from 'date-fns'
 
 export default function Dashboard() {
   const [elevators, setElevators] = useState([])
   const [records, setRecords] = useState([])
+  const navigate = useNavigate()
 
   useEffect(() => {
     api.get('/elevators').then(res => setElevators(res.data))
@@ -16,6 +18,12 @@ export default function Dashboard() {
   const done = doneElevatorIds.size
   const pending = total - done
 
+  const logout = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    navigate('/login')
+  }
+
   // group by tech name
   const byTech = {}
   records.forEach(r => {
@@ -25,8 +33,17 @@ export default function Dashboard() {
   })
 
   return (
-    <div style={{ padding: 20 }}>
+    <div className="container">
       <h2>Admin Dashboard</h2>
+      <div style={{ marginBottom: 10 }}>
+        <button onClick={() => navigate('/elevators')}>Manage Elevators</button>
+        <button style={{ marginLeft: 10 }} onClick={() => navigate('/register')}>
+          Create User
+        </button>
+        <button style={{ marginLeft: 10 }} onClick={logout}>
+          Logout
+        </button>
+      </div>
       <p>Total elevators: {total}</p>
       <p>Maintained: {done}</p>
       <p>Pending: {pending}</p>

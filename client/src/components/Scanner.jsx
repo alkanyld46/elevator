@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Html5Qrcode } from 'html5-qrcode'
 import api from '../utils/api'
+import './Scanner.css'
 
 export default function Scanner() {
   const [msg, setMsg] = useState('Point your camera at the QR code.')
@@ -48,9 +49,9 @@ export default function Scanner() {
   }
 
   return (
-    <div style={{ padding: 20 }}>
+    <div className="scanner">
       <h2>Scan Elevator QR</h2>
-      <div id="reader" style={{ width: '100%' }} />
+      <div id="reader" />
       <p>{msg}</p>
     </div>
   )

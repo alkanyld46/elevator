@@ -21,7 +21,7 @@ export default function Login() {
   }
 
   return (
-    <div style={{ maxWidth: 320, margin: 'auto', padding: 20 }}>
+    <div className="container" style={{ maxWidth: 320 }}>
       <h2>Login</h2>
       {error && <p style={{ color: 'red' }}>{error}</p>}
       <form onSubmit={submit}>
@@ -43,7 +43,9 @@ export default function Login() {
             required
           />
         </div>
-        <button type="submit" style={{ marginTop: 10 }}>Log In</button>
+        <button type="submit" className="primary-btn" style={{ marginTop: 10 }}>
+        Log In
+        </button>
       </form>
     </div>
   )
