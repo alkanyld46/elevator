@@ -4,22 +4,24 @@ import api from '../utils/api';
 
 export default function UploadAttachments() {
     const { id } = useParams();
-    const [files, setFiles] = useState([]);
+    const [items, setItems] = useState([]);
     const [uploading, setUploading] = useState(false);
     const navigate = useNavigate();
 
     const handleSubmit = async e => {
         e.preventDefault();
-        if (!files.length) {
+        if (!items.length) {
             return navigate('/tech');
         }
         const formData = new FormData();
-        files.forEach(f => formData.append('files', f));
+        items.forEach(item => {
+            formData.append('files', item.file);
+            formData.append('descriptions', item.description);
+        });
         setUploading(true);
         try {
-            await api.post(`/records/${id}/attachments`, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
+            await api.post(`/records/${id}/attachments`, formData);
+
             alert('Images uploaded');
         } catch (err) {
             alert('Upload failed');
@@ -38,8 +40,30 @@ export default function UploadAttachments() {
                     accept="image/*"
                     multiple
                     className="form-control mb-3"
-                    onChange={e => setFiles(Array.from(e.target.files))}
+                    onChange={e => {
+                        const fs = Array.from(e.target.files);
+                        setItems(fs.map(f => ({ file: f, description: '' })));
+                    }}
                 />
+                {items.map((item, idx) => (
+                    <div className="mb-3" key={idx}>
+                        <label className="form-label">{item.file.name}</label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            placeholder="Description"
+                            value={item.description}
+                            onChange={e => {
+                                const val = e.target.value;
+                                setItems(itms =>
+                                    itms.map((it, i) =>
+                                        i === idx ? { ...it, description: val } : it
+                                    )
+                                );
+                            }}
+                        />
+                    </div>
+                ))}
                 <button className="btn btn-primary" type="submit" disabled={uploading}>
                     {uploading ? 'Uploading…' : 'Upload'}
                 </button>

@@ -22,17 +22,18 @@ export default function Dashboard() {
     api.get(`/records?elevator=${selected._id}`).then(res => {
       const arr = []
       res.data.forEach(r => {
-        (r.attachments || []).forEach(a => arr.push(a))
-      })
-      setAttachments(arr)
-    })
-  }, [selected])
-  useEffect(() => {
-    if (!selected) return
-    api.get(`/records?elevator=${selected._id}`).then(res => {
-      const arr = []
-      res.data.forEach(r => {
-        (r.attachments || []).forEach(a => arr.push(a))
+        (r.attachments || []).forEach(a => {
+          if (!a) return
+
+          if (typeof a === 'string') {
+            arr.push({ file: a, description: '' })
+          } else if (a.file || a.filename) {
+            arr.push({
+              file: a.file || a.filename,
+              description: a.description || ''
+            })
+          }
+        })
       })
       setAttachments(arr)
     })
@@ -195,9 +196,34 @@ export default function Dashboard() {
             {attachments.length > 0 && (
               <div className="mt-3">
                 <h4>Attachments</h4>
-                {attachments.map((a, i) => (
-                  <img key={i} src={`${api.defaults.baseURL.replace('/api', '')}/uploads/${a}`} alt="attachment" style={{ maxWidth: '100%', marginBottom: 10 }} />
-                ))}
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Description</th>
+                      <th>Download</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {attachments.map((a, i) => (
+                      <tr key={i}>
+                        <td>{a.description || ''}</td>
+                        <td>
+                          {a.file ? (
+                            <a
+                              href={`${api.defaults.baseURL.replace('/api', '')}/uploads/${a.file}`}
+                              download
+                              target="_blank" rel="noopener noreferrer"
+                            >
+                              Download
+                            </a>
+                          ) : (
+                            'N/A'
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
             <button onClick={() => { setSelected(null); setAttachments([]); }}>OK</button>          </div>

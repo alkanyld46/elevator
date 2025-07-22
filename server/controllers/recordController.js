@@ -65,7 +65,13 @@ exports.uploadAttachments = async (req, res) => {
         return res.status(400).json({ msg: 'No files uploaded' })
     }
 
-    const files = req.files.map(f => f.filename)
+    let descriptions = req.body.descriptions
+    if (!descriptions) descriptions = []
+    if (!Array.isArray(descriptions)) descriptions = [descriptions]
+    const files = req.files.map((f, idx) => ({
+        file: f.filename,
+        description: descriptions[idx] || ''
+    }))
     rec.attachments = rec.attachments.concat(files)
     await rec.save()
     res.json(rec)
