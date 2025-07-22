@@ -1,13 +1,10 @@
-// App.tsx
-import React, { useMemo } from 'react';
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-} from 'react-router-dom';
-import { AuthCtx } from './auth';
-import { RequireAuth } from './RequireAuth';
-import NavBar from './components/NavBar';
+import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+
+import { AuthProvider } from './auth';
+import RequireAuth from './RequireAuth';
+import NavBarLayout from './components/NavBarLayout';
+
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Scanner from './components/Scanner';
@@ -17,25 +14,21 @@ import Elevators from './pages/Elevators';
 import Users from './pages/Users';
 import Unauthorized from './pages/Unauthorized';
 import NotFound from './pages/NotFound';
+import RoleRedirect from './RoleRedirect';
 
 function App() {
-  const auth = useMemo(() => {
-    const token = localStorage.getItem('token');
-    const user = token ? JSON.parse(localStorage.getItem('user') || '{}') : null;
-    return { token, user };
-  }, []);
-
   return (
-    <AuthCtx.Provider value={auth}>
+    <AuthProvider>
       <BrowserRouter>
         <Routes>
           {/* Public */}
+          <Route path="/" element={<RoleRedirect />} />
           <Route path="/login" element={<Login />} />
 
-          {/* Layout with navbar for authed users */}
+          {/* Everything below here requires being logged in */}
           <Route element={<RequireAuth />}>
             <Route element={<NavBarLayout />}>
-              {/* Admin */}
+              {/* Admin-only */}
               <Route element={<RequireAuth roles={['admin']} />}>
                 <Route path="/register" element={<Register />} />
                 <Route path="/admin" element={<Dashboard />} />
@@ -43,7 +36,7 @@ function App() {
                 <Route path="/users" element={<Users />} />
               </Route>
 
-              {/* Tech */}
+              {/* Tech-only */}
               <Route element={<RequireAuth roles={['tech']} />}>
                 <Route path="/tech" element={<TechHome />} />
                 <Route path="/scanner" element={<Scanner />} />
@@ -55,17 +48,7 @@ function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
-    </AuthCtx.Provider>
-  );
-}
-
-// Simple layout example
-function NavBarLayout() {
-  return (
-    <>
-      <NavBar />
-      <Outlet />
-    </>
+    </AuthProvider>
   );
 }
 
