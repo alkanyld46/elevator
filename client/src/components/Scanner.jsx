@@ -88,8 +88,12 @@ export default function Scanner() {
     await stopScanner();
 
     try {
-      await api.post('/records', { elevatorId: qrData });
-      alert('Maintenance logged!');
+      const res = await api.post('/records', { elevatorId: qrData });
+      const recordId = res.data?._id;
+      const upload = window.confirm('Maintenance logged! Add photos?');
+      if (upload && recordId) {
+        return navigate(`/upload/${recordId}`);
+      }
       navigate('/tech');
     } catch (err) {
       scannedRef.current = false;

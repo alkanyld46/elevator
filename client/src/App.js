@@ -15,6 +15,7 @@ import Users from './pages/Users';
 import Unauthorized from './pages/Unauthorized';
 import NotFound from './pages/NotFound';
 import RoleRedirect from './RoleRedirect';
+import UploadAttachments from './pages/UploadAttachments';
 
 function App() {
   return (
@@ -40,6 +41,8 @@ function App() {
               <Route element={<RequireAuth roles={['tech']} />}>
                 <Route path="/tech" element={<TechHome />} />
                 <Route path="/scanner" element={<Scanner />} />
+                <Route path="/upload/:id" element={<UploadAttachments />} />
+
               </Route>
             </Route>
           </Route>

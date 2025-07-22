@@ -1,0 +1,87 @@
+# --------------------
+# Node / JS ecosystem
+# --------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Lockfiles are usually committed; delete these lines if you want to keep them ignored
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# --------------------
+# Build artifacts
+# --------------------
+client/build/
+client/dist/
+server/dist/
+.next/
+out/
+storybook-static/
+
+# --------------------
+# Env & secrets
+# --------------------
+.env
+.env.*
+!.env.example
+!.env.sample
+
+# dotenvx cache
+.dotenvx
+
+# --------------------
+# Logs & coverage
+# --------------------
+logs/
+*.log
+coverage/
+.cache/
+.nyc_output/
+
+# --------------------
+# Editor / OS cruft
+# --------------------
+.vscode/
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+
+# --------------------
+# Uploads / temp storage
+# --------------------
+uploads/
+tmp/
+temp/
+storage/
+
+# --------------------
+# Framework/host specific
+# --------------------
+.vercel/
+.netlify/
+.ngrok2/
+ngrok.log
+cloudflared.log
+
+# CRA / Vite related
+*.tsbuildinfo
+
+# --------------------
+# Misc
+# --------------------
+# If you use SQLite or similar local DB files
+*.sqlite
+*.db
+
+# If you commit screenshots or test artifacts elsewhere
+cypress/videos/
+cypress/screenshots/
+playwright-report/

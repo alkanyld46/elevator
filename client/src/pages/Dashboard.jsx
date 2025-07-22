@@ -8,6 +8,7 @@ export default function Dashboard() {
   const [records, setRecords] = useState([])
   const [selectedTech, setSelectedTech] = useState('')
   const [selected, setSelected] = useState(null) // modal elevator
+  const [attachments, setAttachments] = useState([])
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -15,6 +16,27 @@ export default function Dashboard() {
     api.get('/elevators/current').then(res => setElevators(res.data))
     api.get(`/records?month=${month}`).then(res => setRecords(res.data))
   }, [])
+
+  useEffect(() => {
+    if (!selected) return
+    api.get(`/records?elevator=${selected._id}`).then(res => {
+      const arr = []
+      res.data.forEach(r => {
+        (r.attachments || []).forEach(a => arr.push(a))
+      })
+      setAttachments(arr)
+    })
+  }, [selected])
+  useEffect(() => {
+    if (!selected) return
+    api.get(`/records?elevator=${selected._id}`).then(res => {
+      const arr = []
+      res.data.forEach(r => {
+        (r.attachments || []).forEach(a => arr.push(a))
+      })
+      setAttachments(arr)
+    })
+  }, [selected])
 
   const total = elevators.length
   const doneElevatorIds = new Set(records.map(r => r.elevator?._id || r.elevator))
@@ -170,8 +192,15 @@ export default function Dashboard() {
             <p><strong>Location:</strong> {selected.location}</p>
             <p><strong>QR Code:</strong> {selected.qrCodeData}</p>
             <p><strong>Assigned Month:</strong> {new Date(selected.assignedMonth).toLocaleDateString()}</p>
-            <button onClick={() => setSelected(null)}>OK</button>
-          </div>
+            {attachments.length > 0 && (
+              <div className="mt-3">
+                <h4>Attachments</h4>
+                {attachments.map((a, i) => (
+                  <img key={i} src={`${api.defaults.baseURL.replace('/api', '')}/uploads/${a}`} alt="attachment" style={{ maxWidth: '100%', marginBottom: 10 }} />
+                ))}
+              </div>
+            )}
+            <button onClick={() => { setSelected(null); setAttachments([]); }}>OK</button>          </div>
         </div>
       )}
     </div>

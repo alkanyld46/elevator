@@ -57,3 +57,16 @@ exports.getAll = async (req, res) => {
         .populate('elevator', 'name location')
     res.json(recs)
 }
+
+exports.uploadAttachments = async (req, res) => {
+    const rec = await Record.findById(req.params.id)
+    if (!rec) return res.status(404).json({ msg: 'Record not found' })
+    if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ msg: 'No files uploaded' })
+    }
+
+    const files = req.files.map(f => f.filename)
+    rec.attachments = rec.attachments.concat(files)
+    await rec.save()
+    res.json(rec)
+}
