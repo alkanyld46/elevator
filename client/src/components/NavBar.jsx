@@ -21,6 +21,7 @@ export default function NavBar() {
         {user.role === 'admin' ? (
           <>
             <Link to="/admin">Dashboard</Link>
+            <Link to="/users">Users</Link>
             <Link to="/register">Create User</Link>
           </>
         ) : (

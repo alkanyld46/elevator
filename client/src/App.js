@@ -6,6 +6,7 @@ import Scanner from './components/Scanner'
 import Dashboard from './pages/Dashboard'
 import TechHome from './pages/TechHome'
 import Elevators from './pages/Elevators'
+import Users from './pages/Users'
 import NavBar from './components/NavBar'
 
 function App() {
@@ -29,6 +30,7 @@ function App() {
               <>
                 <Route path="/admin" element={<Dashboard />} />
                 <Route path="/elevators" element={<Elevators />} />
+                <Route path="/users" element={<Users />} />
               </>
             )}
             <Route

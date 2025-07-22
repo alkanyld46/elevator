@@ -7,7 +7,7 @@ export default function Elevators() {
   const [name, setName] = useState('')
   const [location, setLocation] = useState('')
   const [qrCodeData, setQrCodeData] = useState('')
-  const [assignedMonth, setAssignedMonth] = useState('')
+  const [schedules, setSchedules] = useState([{ date: '', repeat: 1 }])
   const navigate = useNavigate()
 
   const fetchList = () => {
@@ -24,12 +24,12 @@ export default function Elevators() {
       name,
       location,
       qrCodeData,
-      assignedMonth,
+      maintenanceSchedules: schedules,
     })
     setName('')
     setLocation('')
     setQrCodeData('')
-    setAssignedMonth('')
+    setSchedules([{ date: '', repeat: 1 }])
     fetchList()
   }
 
@@ -39,63 +39,91 @@ export default function Elevators() {
     fetchList()
   }
 
-  const logout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    navigate('/login')
-  }
+
 
   return (
-    <div style={{ padding: 20 }}>
+    <div className="container my-4">
       <h2>Manage Elevators</h2>
-      <div style={{ marginBottom: 10 }}>
-        <button onClick={() => navigate('/admin')}>Back</button>
-        <button style={{ marginLeft: 10 }} onClick={logout}>Logout</button>
+      <div className="mb-3">
+        <button className="btn btn-secondary" onClick={() => navigate('/admin')}>Back</button>
       </div>
-      <form onSubmit={submit} style={{ marginBottom: 20 }}>
-        <div>
+      <form onSubmit={submit} className="mb-3">
+        <div className="mb-2">
           <input
+            className="form-control"
             placeholder="Name"
             value={name}
             onChange={e => setName(e.target.value)}
             required
           />
         </div>
-        <div>
+        <div className="mb-2">
           <input
+            className="form-control"
             placeholder="Location"
             value={location}
             onChange={e => setLocation(e.target.value)}
             required
           />
         </div>
-        <div>
+        <div className="mb-2">
           <input
+            className="form-control"
             placeholder="QR Code Data"
             value={qrCodeData}
             onChange={e => setQrCodeData(e.target.value)}
             required
           />
         </div>
-        <div>
-          <input
-            type="month"
-            value={assignedMonth}
-            onChange={e => setAssignedMonth(e.target.value)}
-            required
-          />
-        </div>
-        <button type="submit" style={{ marginTop: 10 }}>
+        {schedules.map((s, idx) => (
+          <div key={idx} className="mb-2 d-flex">
+            <input
+              className="form-control"
+              type="month"
+              value={s.date}
+              onChange={e => {
+                const arr = [...schedules]
+                arr[idx].date = e.target.value
+                setSchedules(arr)
+              }}
+              required
+            />
+            <input
+              className="form-control ms-2"
+              type="number"
+              min="0"
+              value={s.repeat}
+              onChange={e => {
+                const arr = [...schedules]
+                arr[idx].repeat = e.target.value
+                setSchedules(arr)
+              }}
+              style={{ width: 80 }}
+            />
+          </div>
+        ))}
+        <button type="button" className="btn btn-secondary mb-2" onClick={() => setSchedules([...schedules, { date: '', repeat: 1 }])}>
+          Add Schedule
+        </button>
+        <button type="submit" className="btn btn-primary  mb-2 ">
           Add Elevator
         </button>
       </form>
-      <ul>
+      <ul className="list-group">
         {list.map(el => (
-          <li key={el._id} style={{ marginBottom: 6 }}>
-            {el.name} @ {el.location} -{' '}
-            {new Date(el.assignedMonth).toLocaleDateString()}
+          <li key={el._id} className="list-group-item">
+            {el.name} @ {el.location}
+            {el.maintenanceSchedules && el.maintenanceSchedules.length > 0 && (
+              <ul className="mt-2">
+                {el.maintenanceSchedules.map((s, i) => (
+                  <li key={i}>
+                    {new Date(s.date).toLocaleDateString()} repeat {s.repeat}
+                  </li>
+                ))}
+              </ul>
+            )}
             <button
-              style={{ marginLeft: 10 }}
+              className="btn btn-sm btn-danger ms-2"
               onClick={() => remove(el._id)}
             >
               Delete

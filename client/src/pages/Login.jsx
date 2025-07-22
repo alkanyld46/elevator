@@ -21,30 +21,32 @@ export default function Login() {
   }
 
   return (
-    <div className="container" style={{ maxWidth: 320 }}>
+    <div className="container my-4" style={{ maxWidth: 320 }}>
       <h2>Login</h2>
       {error && <p style={{ color: 'red' }}>{error}</p>}
       <form onSubmit={submit}>
-        <div>
-          <label>Email</label><br />
+      <div className="mb-3">
+      <label className="form-label">Email</label>
           <input
+            className="form-control"
             type="email"
             value={email}
             onChange={e => setEmail(e.target.value)}
             required
           />
         </div>
-        <div>
-          <label>Password</label><br />
+        <div className="mb-3">
+        <label className="form-label">Password</label>
           <input
+            className="form-control"
             type="password"
             value={password}
             onChange={e => setPassword(e.target.value)}
             required
           />
         </div>
-        <button type="submit" className="primary-btn" style={{ marginTop: 10 }}>
-        Log In
+        <button type="submit" className="btn btn-primary">
+          Log In
         </button>
       </form>
     </div>

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Html5Qrcode } from 'html5-qrcode'
+import { useNavigate } from 'react-router-dom'
 import api from '../utils/api'
 import './Scanner.css'
 
@@ -7,6 +8,7 @@ export default function Scanner() {
   const [msg, setMsg] = useState('Point your camera at the QR code.')
   const html5QrCodeRef = useRef(null)
   const startedRef = useRef(false)
+  const navigate = useNavigate()
 
   useEffect(() => {
     const html5Qr = new Html5Qrcode('reader')
@@ -22,7 +24,7 @@ export default function Scanner() {
           cams[0].id,
           { fps: 10, qrbox: 250 },
           qrCodeMessage => onScanSuccess(qrCodeMessage),
-          () => {}
+          () => { }
         ).then(() => { startedRef.current = true })
       })
       .catch(() => setMsg('Camera access denied'))
@@ -38,13 +40,32 @@ export default function Scanner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  const stopScanner = () => {
+    if (html5QrCodeRef.current && startedRef.current) {
+      html5QrCodeRef.current.stop().catch(() => { })
+      startedRef.current = false
+    }
+  }
+
   const onScanSuccess = async qrData => {
+    stopScanner()
+
     try {
-      // qrData should be qrCodeData (string) matching elevator.qrCodeData
       await api.post('/records', { elevatorId: qrData })
-      setMsg('✅ Maintenance logged!')
+      alert('Maintenance logged!')
+      navigate('/tech')
     } catch {
-      setMsg('❌ Logging failed.')
+      const retry = window.confirm('Invalid QR code. Try again?')
+      if (!retry) navigate('/tech')
+      else {
+        // restart scanning
+        const cams = await Html5Qrcode.getCameras()
+        if (cams && cams[0]) {
+          html5QrCodeRef.current
+            .start(cams[0].id, { fps: 10, qrbox: 250 }, onScanSuccess)
+            .then(() => (startedRef.current = true))
+        }
+      }
     }
   }
 
