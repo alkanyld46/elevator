@@ -78,7 +78,7 @@ export default function Dashboard() {
         </table>
       )}
 
-      <h3 style={{ marginTop: 20 }}>Pending Elevators</h3>
+      <h3 style={{ marginTop: 20 }}>Pending Elevators For This Month</h3>
       {pendingList.length === 0 ? (
         <p>All elevators maintained.</p>
       ) : (
