@@ -1,19 +1,23 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../utils/api'
+import { useAuth } from '../auth'
 
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const navigate = useNavigate()
+  const { setAuth } = useAuth()
   const ROLE_HOME = { admin: '/admin', tech: '/tech' } // add more roles if needed
+
   const submit = async e => {
     e.preventDefault()
     try {
       const { data } = await api.post('/auth/login', { email, password })
       localStorage.setItem('token', data.token)
       localStorage.setItem('user', JSON.stringify(data.user))
+      setAuth({ token: data.token, user: data.user })
       const target = ROLE_HOME[data.user.role] || '/login'
       navigate(target, { replace: true })
     } catch (err) {

@@ -3,6 +3,12 @@
     text-align: center;
 }
 
+#reader video,
+#reader canvas {
+    width: 100% !important;
+    height: auto !important;
+}
+
 #reader {
     width: 100%;
     max-width: 400px;

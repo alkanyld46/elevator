@@ -31,11 +31,6 @@ export default function Dashboard() {
     byTech[id].list.push(r)
   })
 
-  const logout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    navigate('/login')
-  }
 
   return (
     <div className="container my-4">
@@ -47,9 +42,6 @@ export default function Dashboard() {
         </button>
         <button className="btn btn-secondary ms-2" onClick={() => navigate('/register')}>
           Create User
-        </button>
-        <button className="btn btn-danger ms-2" onClick={logout}>
-          Logout
         </button>
       </div>
 

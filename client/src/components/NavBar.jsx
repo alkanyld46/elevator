@@ -12,7 +12,7 @@ export default function NavBar() {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     setAuth({ token: null, user: null });
-    navigate('/login')
+    navigate('/login', { replace: true })
   }
 
   if (!user.role) return null
