@@ -7,7 +7,7 @@ export default function Elevators() {
   const [name, setName] = useState('')
   const [location, setLocation] = useState('')
   const [qrCodeData, setQrCodeData] = useState('')
-  const [schedules, setSchedules] = useState([{ date: '', repeat: 1 }])
+  const [schedules, setSchedules] = useState([{ date: '' }])
   const navigate = useNavigate()
 
   const fetchList = () => {
@@ -29,7 +29,7 @@ export default function Elevators() {
     setName('')
     setLocation('')
     setQrCodeData('')
-    setSchedules([{ date: '', repeat: 1 }])
+    setSchedules([{ date: '' }])
     fetchList()
   }
 
@@ -88,21 +88,10 @@ export default function Elevators() {
               }}
               required
             />
-            <input
-              className="form-control ms-2"
-              type="number"
-              min="0"
-              value={s.repeat}
-              onChange={e => {
-                const arr = [...schedules]
-                arr[idx].repeat = e.target.value
-                setSchedules(arr)
-              }}
-              style={{ width: 80 }}
-            />
+
           </div>
         ))}
-        <button type="button" className="btn btn-secondary mb-2" onClick={() => setSchedules([...schedules, { date: '', repeat: 1 }])}>
+        <button type="button" className="btn btn-secondary mb-2" onClick={() => setSchedules([...schedules, { date: '' }])}>
           Add Schedule
         </button>
         <button type="submit" className="btn btn-primary  mb-2 ">
@@ -117,7 +106,7 @@ export default function Elevators() {
               <ul className="mt-2">
                 {el.maintenanceSchedules.map((s, i) => (
                   <li key={i}>
-                    {new Date(s.date).toLocaleDateString()} repeat {s.repeat}
+                    {new Date(s.date).toLocaleDateString()}
                   </li>
                 ))}
               </ul>

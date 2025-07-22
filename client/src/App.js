@@ -1,51 +1,72 @@
-import React from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import Login from './pages/Login'
-import Register from './pages/Register'
-import Scanner from './components/Scanner'
-import Dashboard from './pages/Dashboard'
-import TechHome from './pages/TechHome'
-import Elevators from './pages/Elevators'
-import Users from './pages/Users'
-import NavBar from './components/NavBar'
+// App.tsx
+import React, { useMemo } from 'react';
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+} from 'react-router-dom';
+import { AuthCtx } from './auth';
+import { RequireAuth } from './RequireAuth';
+import NavBar from './components/NavBar';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Scanner from './components/Scanner';
+import Dashboard from './pages/Dashboard';
+import TechHome from './pages/TechHome';
+import Elevators from './pages/Elevators';
+import Users from './pages/Users';
+import Unauthorized from './pages/Unauthorized';
+import NotFound from './pages/NotFound';
 
 function App() {
-  const token = localStorage.getItem('token')
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  const auth = useMemo(() => {
+    const token = localStorage.getItem('token');
+    const user = token ? JSON.parse(localStorage.getItem('user') || '{}') : null;
+    return { token, user };
+  }, []);
 
   return (
-    <BrowserRouter>
-      {token && <NavBar />}
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        {token && user.role === 'admin' && (
-          <Route path="/register" element={<Register />} />
-        )}
+    <AuthCtx.Provider value={auth}>
+      <BrowserRouter>
+        <Routes>
+          {/* Public */}
+          <Route path="/login" element={<Login />} />
 
-        {token ? (
-          <>
-            <Route path="/tech" element={<TechHome />} />
-            <Route path="/scanner" element={<Scanner />} />
-            {user.role === 'admin' && (
-              <>
+          {/* Layout with navbar for authed users */}
+          <Route element={<RequireAuth />}>
+            <Route element={<NavBarLayout />}>
+              {/* Admin */}
+              <Route element={<RequireAuth roles={['admin']} />}>
+                <Route path="/register" element={<Register />} />
                 <Route path="/admin" element={<Dashboard />} />
                 <Route path="/elevators" element={<Elevators />} />
                 <Route path="/users" element={<Users />} />
-              </>
-            )}
-            <Route
-              path="*"
-              element={
-                <Navigate to={user.role === 'admin' ? '/admin' : '/tech'} />
-              }
-            />
-          </>
-        ) : (
-          <Route path="*" element={<Navigate to="/login" />} />
-        )}
-      </Routes>
-    </BrowserRouter>
-  )
+              </Route>
+
+              {/* Tech */}
+              <Route element={<RequireAuth roles={['tech']} />}>
+                <Route path="/tech" element={<TechHome />} />
+                <Route path="/scanner" element={<Scanner />} />
+              </Route>
+            </Route>
+          </Route>
+
+          <Route path="/unauthorized" element={<Unauthorized />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthCtx.Provider>
+  );
 }
 
-export default App
+// Simple layout example
+function NavBarLayout() {
+  return (
+    <>
+      <NavBar />
+      <Outlet />
+    </>
+  );
+}
+
+export default App;

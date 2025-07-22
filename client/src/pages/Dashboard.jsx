@@ -11,7 +11,7 @@ export default function Dashboard() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    api.get('/elevators').then(res => setElevators(res.data))
+    api.get('/elevators/current').then(res => setElevators(res.data))
     api.get('/records').then(res => setRecords(res.data))
   }, [])
 

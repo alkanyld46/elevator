@@ -6,7 +6,6 @@ const elevatorSchema = new mongoose.Schema({
     maintenanceSchedules: [
         {
             date: { type: Date, required: true },
-            repeat: { type: Number, default: 0 }, // repeat in months, 0 = no repeat
         },
     ],
 }, { timestamps: true })

@@ -8,6 +8,7 @@ export default function Scanner() {
   const [msg, setMsg] = useState('Point your camera at the QR code.')
   const html5QrCodeRef = useRef(null)
   const startedRef = useRef(false)
+  const scannedRef = useRef(false)    // ← guard to prevent repeat scans
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -20,12 +21,14 @@ export default function Scanner() {
           setMsg('No camera found')
           return
         }
-        return html5Qr.start(
-          cams[0].id,
-          { fps: 10, qrbox: 250 },
-          qrCodeMessage => onScanSuccess(qrCodeMessage),
-          () => { }
-        ).then(() => { startedRef.current = true })
+        return html5Qr
+          .start(
+            cams[0].id,
+            { fps: 10, qrbox: 250 },
+            qrData => onScanSuccess(qrData),
+            () => { }
+          )
+          .then(() => { startedRef.current = true })
       })
       .catch(() => setMsg('Camera access denied'))
 
@@ -40,30 +43,42 @@ export default function Scanner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const stopScanner = () => {
+  // fully stop and clear the scanner
+  const stopScanner = async () => {
     if (html5QrCodeRef.current && startedRef.current) {
-      html5QrCodeRef.current.stop().catch(() => { })
+      try {
+        await html5QrCodeRef.current.stop()
+        await html5QrCodeRef.current.clear()
+      } catch { }
       startedRef.current = false
     }
   }
 
   const onScanSuccess = async qrData => {
-    stopScanner()
+    // ignore duplicates
+    if (scannedRef.current) return
+    scannedRef.current = true
+
+    // ensure scanner is stopped before proceeding
+    await stopScanner()
 
     try {
       await api.post('/records', { elevatorId: qrData })
       alert('Maintenance logged!')
       navigate('/tech')
     } catch {
+      // allow a retry
+      scannedRef.current = false
       const retry = window.confirm('Invalid QR code. Try again?')
-      if (!retry) navigate('/tech')
-      else {
+      if (!retry) {
+        navigate('/tech')
+      } else {
         // restart scanning
         const cams = await Html5Qrcode.getCameras()
         if (cams && cams[0]) {
           html5QrCodeRef.current
             .start(cams[0].id, { fps: 10, qrbox: 250 }, onScanSuccess)
-            .then(() => (startedRef.current = true))
+            .then(() => { startedRef.current = true })
         }
       }
     }
