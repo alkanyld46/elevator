@@ -40,14 +40,14 @@ export default function TechHome() {
 
   return (
     <div className="container my-4">
-      <h2>Welcome {user.name}</h2>
+      <h2 className="text-center pb-5">Welcome {user.name}</h2>
 
       {loading && <p>Loading…</p>}
       {err && <p style={{ color: 'red' }}>{err}</p>}
 
       {!loading && !err && (
         <div className="row">
-          <div className="col-md-6 mb-4">
+          {/* <div className="col-md-6 mb-4">
             <h4>All Elevators ({all.length})</h4>
             <ul className="list-group">
               {all.map(el => (
@@ -56,9 +56,9 @@ export default function TechHome() {
                 </li>
               ))}
             </ul>
-          </div>
+          </div> */}
 
-          <div className="col-md-6 mb-4">
+          <div className="col-md-64 mb-4">
             <h4>Unmaintained This Month ({unmaintained.length})</h4>
             <ul className="list-group">
               {unmaintained.length === 0 && (

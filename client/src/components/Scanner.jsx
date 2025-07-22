@@ -62,6 +62,18 @@ export default function Scanner() {
         await html5QrCodeRef.current.clear(); // you can drop clear() if you prefer to keep the last frame
       } catch (e) {
         console.warn('Stop failed:', e);
+        // Fallback: manually stop any active media tracks if the
+        // library fails to release the camera. This prevents the
+        // camera from staying open when navigating away.
+        try {
+          const video = document.querySelector('#reader video');
+          video?.srcObject?.getTracks()?.forEach(t => t.stop());
+          if (video) video.srcObject = null;
+          const reader = document.getElementById('reader');
+          if (reader) reader.innerHTML = '';
+        } catch (err) {
+          console.warn('Manual stop failed:', err);
+        }
       }
       startedRef.current = false;
       sessionStorage.setItem('scanning', 'false');

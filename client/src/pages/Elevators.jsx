@@ -10,7 +10,10 @@ export default function Elevators() {
   const [schedules, setSchedules] = useState([{ date: '' }])
   const [selectedId, setSelectedId] = useState('')
   const [editId, setEditId] = useState(null)
+  const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
   const navigate = useNavigate()
+  const perPage = 5
 
   const fetchList = () => {
     api.get('/elevators').then(res => setList(res.data))
@@ -19,6 +22,10 @@ export default function Elevators() {
   useEffect(() => {
     fetchList()
   }, [])
+
+  useEffect(() => {
+    setPage(1)
+  }, [search, list])
 
   const submit = async e => {
     e.preventDefault()
@@ -47,11 +54,27 @@ export default function Elevators() {
 
   }
 
+  const filtered = list.filter(el =>
+    el.name.toLowerCase().includes(search.toLowerCase()) ||
+    el.location.toLowerCase().includes(search.toLowerCase())
+  )
+  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage))
+  const start = (page - 1) * perPage
+  const paged = filtered.slice(start, start + perPage)
+
   return (
     <div className="container my-4">
       <h2>Manage Elevators</h2>
       <div className="mb-3">
         <button className="btn btn-secondary" onClick={() => navigate('/admin')}>Back</button>
+      </div>
+      <div className="mb-3">
+        <input
+          className="form-control"
+          placeholder="Search by name or location"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
       </div>
       <div className="mt-2">
         <button
@@ -84,6 +107,7 @@ export default function Elevators() {
           Delete Selected
         </button>
       </div>
+      <p></p>
       <form onSubmit={submit} className="mb-3">
         <div className="mb-2">
           <input
@@ -113,9 +137,9 @@ export default function Elevators() {
           />
         </div>
         {schedules.map((s, idx) => (
-          <div key={idx} className="mb-2 d-flex">
+          <div key={idx} className="mb-2 d-flex align-items-center">
             <input
-              className="form-control"
+              className="form-control me-2"
               type="month"
               value={s.date}
               onChange={e => {
@@ -125,7 +149,13 @@ export default function Elevators() {
               }}
               required
             />
-
+            <button
+              type="button"
+              className="btn btn-outline-danger"
+              onClick={() => setSchedules(schedules.filter((_, i) => i !== idx))}
+            >
+              X
+            </button>
           </div>
         ))}
         <button type="button" className="btn btn-secondary mb-2" onClick={() => setSchedules([...schedules, { date: '' }])}>
@@ -141,7 +171,7 @@ export default function Elevators() {
         )}
       </form>
       <ul className="list-group">
-        {list.map(el => (
+        {paged.map(el => (
           <li key={el._id} className="list-group-item d-flex align-items-start">
             <input
               type="radio"
@@ -164,7 +194,27 @@ export default function Elevators() {
           </li>
         ))}
       </ul>
-
-    </div>
+      <div className="d-flex justify-content-between align-items-center mt-2">
+        <button
+          type="button"
+          className="btn btn-secondary"
+          disabled={page === 1}
+          onClick={() => setPage(p => Math.max(1, p - 1))}
+        >
+          Previous
+        </button>
+        <span>
+          Page {page} of {totalPages}
+        </span>
+        <button
+          type="button"
+          className="btn btn-secondary"
+          disabled={page === totalPages}
+          onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+        >
+          Next
+        </button>
+      </div>
+    </div >
   )
 }

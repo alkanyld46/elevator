@@ -8,11 +8,12 @@ export default function NavBar() {
   const navigate = useNavigate()
   const { setAuth } = useAuth();
 
+  // Always dispatch a scanner stop event when navigating away
+  // from pages or logging out. The scanner listens for this
+  // event and will ignore it if it isn't running
   const stopScanIfNeeded = () => {
-    if (sessionStorage.getItem('scanning') === 'true') {
-      window.dispatchEvent(new Event('forceStopScanner'))
+    window.dispatchEvent(new Event('forceStopScanner'))
 
-    }
   }
 
   const logout = () => {
