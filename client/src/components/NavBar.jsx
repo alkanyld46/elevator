@@ -8,17 +8,15 @@ export default function NavBar() {
   const navigate = useNavigate()
   const { setAuth } = useAuth();
 
-  const checkScanning = e => {
+  const stopScanIfNeeded = () => {
     if (sessionStorage.getItem('scanning') === 'true') {
-      e.preventDefault();
-      alert('Please stop scanning before leaving this page.');
-      return true;
+      window.dispatchEvent(new Event('forceStopScanner'))
+
     }
-    return false;
   }
 
   const logout = () => {
-    if (checkScanning({ preventDefault: () => { } })) return;
+    stopScanIfNeeded()
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     setAuth({ token: null, user: null });
@@ -33,14 +31,14 @@ export default function NavBar() {
       <div className="nav-links">
         {user.role === 'admin' ? (
           <>
-            <Link to="/admin" onClick={checkScanning}>Dashboard</Link>
-            <Link to="/users" onClick={checkScanning}>Users</Link>
-            <Link to="/register" onClick={checkScanning}>Create User</Link>
+            <Link to="/admin" onClick={stopScanIfNeeded}>Dashboard</Link>
+            <Link to="/users" onClick={stopScanIfNeeded}>Users</Link>
+            <Link to="/register" onClick={stopScanIfNeeded}>Create User</Link>
           </>
         ) : (
           <>
-            <Link to="/tech" onClick={checkScanning}>Home</Link>
-            <Link to="/scanner" onClick={checkScanning}>Scan</Link>
+            <Link to="/tech" onClick={stopScanIfNeeded}>Home</Link>
+            <Link to="/scanner" onClick={stopScanIfNeeded}>Scan</Link>
           </>
         )}
         <button className="logout-btn" onClick={logout}>

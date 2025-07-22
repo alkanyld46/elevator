@@ -18,9 +18,12 @@ export default function Scanner() {
     initRef.current = true;
 
     html5QrCodeRef.current = new Html5Qrcode('reader');
+    const handler = () => stopScanner();
+    window.addEventListener('forceStopScanner', handler);
     startScanner();
 
     return () => {
+      window.removeEventListener('forceStopScanner', handler);
       stopScanner();
       sessionStorage.setItem('scanning', 'false');
 
@@ -43,7 +46,7 @@ export default function Scanner() {
         () => { }
       );
       startedRef.current = true;
-      sessionStorage.setItem('scanning', 'false');
+      sessionStorage.setItem('scanning', 'true');
       setScanning(true);
       setMsg('Point your camera at the QR code.');
     } catch (e) {

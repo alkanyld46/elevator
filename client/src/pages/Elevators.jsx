@@ -8,6 +8,8 @@ export default function Elevators() {
   const [location, setLocation] = useState('')
   const [qrCodeData, setQrCodeData] = useState('')
   const [schedules, setSchedules] = useState([{ date: '' }])
+  const [selectedId, setSelectedId] = useState('')
+  const [editId, setEditId] = useState(null)
   const navigate = useNavigate()
 
   const fetchList = () => {
@@ -20,32 +22,67 @@ export default function Elevators() {
 
   const submit = async e => {
     e.preventDefault()
-    await api.post('/elevators', {
+    const payload = {
       name,
       location,
       qrCodeData,
       maintenanceSchedules: schedules,
-    })
+    }
+    if (editId) {
+      await api.put(`/elevators/${editId}`, payload)
+    } else {
+      await api.post('/elevators', payload)
+    }
+    cancelEdit()
+    fetchList()
+  }
+
+  const cancelEdit = () => {
+    setEditId(null)
     setName('')
     setLocation('')
     setQrCodeData('')
     setSchedules([{ date: '' }])
-    fetchList()
+    setSelectedId('')
+
   }
-
-  const remove = async id => {
-    if (!window.confirm('Delete elevator?')) return
-    await api.delete(`/elevators/${id}`)
-    fetchList()
-  }
-
-
 
   return (
     <div className="container my-4">
       <h2>Manage Elevators</h2>
       <div className="mb-3">
         <button className="btn btn-secondary" onClick={() => navigate('/admin')}>Back</button>
+      </div>
+      <div className="mt-2">
+        <button
+          className="btn btn-primary me-2"
+          disabled={!selectedId}
+          onClick={() => {
+            const el = list.find(e => e._id === selectedId)
+            if (!el) return
+            setEditId(el._id)
+            setName(el.name)
+            setLocation(el.location)
+            setQrCodeData(el.qrCodeData)
+            setSchedules(
+              (el.maintenanceSchedules || []).map(s => ({ date: s.date.slice(0, 7) }))
+            )
+          }}
+        >
+          Edit Selected
+        </button>
+        <button
+          className="btn btn-danger"
+          disabled={!selectedId}
+          onClick={async () => {
+            if (!window.confirm('Delete elevator?')) return
+            await api.delete(`/elevators/${selectedId}`)
+            cancelEdit()
+            fetchList()
+          }}
+        >
+          Delete Selected
+        </button>
       </div>
       <form onSubmit={submit} className="mb-3">
         <div className="mb-2">
@@ -95,31 +132,39 @@ export default function Elevators() {
           Add Schedule
         </button>
         <button type="submit" className="btn btn-primary  mb-2 ">
-          Add Elevator
+          {editId ? 'Update Elevator' : 'Add Elevator'}
         </button>
+        {editId && (
+          <button type="button" className="btn btn-secondary mb-2 ms-2" onClick={cancelEdit}>
+            Cancel
+          </button>
+        )}
       </form>
       <ul className="list-group">
         {list.map(el => (
-          <li key={el._id} className="list-group-item">
-            {el.name} @ {el.location}
-            {el.maintenanceSchedules && el.maintenanceSchedules.length > 0 && (
-              <ul className="mt-2">
-                {el.maintenanceSchedules.map((s, i) => (
-                  <li key={i}>
-                    {new Date(s.date).toLocaleDateString()}
-                  </li>
-                ))}
-              </ul>
-            )}
-            <button
-              className="btn btn-sm btn-danger ms-2"
-              onClick={() => remove(el._id)}
-            >
-              Delete
-            </button>
+          <li key={el._id} className="list-group-item d-flex align-items-start">
+            <input
+              type="radio"
+              name="selectedElevator"
+              className="form-check-input me-2"
+              value={el._id}
+              checked={selectedId === el._id}
+              onChange={() => setSelectedId(el._id)}
+            />
+            <div className="flex-grow-1">
+              {el.name} @ {el.location}
+              {el.maintenanceSchedules && el.maintenanceSchedules.length > 0 && (
+                <ul className="mt-2">
+                  {el.maintenanceSchedules.map((s, i) => (
+                    <li key={i}>{new Date(s.date).toLocaleDateString()}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </li>
         ))}
       </ul>
+
     </div>
   )
 }

@@ -11,8 +11,9 @@ export default function Dashboard() {
   const navigate = useNavigate()
 
   useEffect(() => {
+    const month = new Date().toISOString().slice(0, 7)
     api.get('/elevators/current').then(res => setElevators(res.data))
-    api.get('/records').then(res => setRecords(res.data))
+    api.get(`/records?month=${month}`).then(res => setRecords(res.data))
   }, [])
 
   const total = elevators.length

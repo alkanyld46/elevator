@@ -1,6 +1,14 @@
 const Record = require('../models/MaintenanceRecord')
-
 const Elevator = require('../models/Elevator');
+
+function dueForMonth(schedule, monthDate) {
+    const d = new Date(schedule.date)
+    return (
+        d.getUTCFullYear() === monthDate.getUTCFullYear() &&
+        d.getUTCMonth() === monthDate.getUTCMonth()
+    )
+}
+
 exports.create = async (req, res) => {
     const { elevatorId } = req.body; // actually qrCodeData
     const elevator = await Elevator.findOne({ qrCodeData: elevatorId });
@@ -8,6 +16,13 @@ exports.create = async (req, res) => {
     const now = new Date();
     const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
     const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+
+    const scheduled = (elevator.maintenanceSchedules || []).some(s =>
+        dueForMonth(s, now)
+    )
+    if (!scheduled) {
+        return res.status(400).json({ msg: 'Elevator not scheduled for maintenance this month' })
+    }
 
     const existing = await Record.findOne({
         elevator: elevator._id,
@@ -25,11 +40,17 @@ exports.create = async (req, res) => {
 };
 
 // @route GET /api/records
-// optional query: ?user=...  ?elevator=...
+// optional query: ?user=...  ?elevator=... ?month=YYYY-MM
 exports.getAll = async (req, res) => {
     const filter = {}
     if (req.query.user) filter.user = req.query.user
     if (req.query.elevator) filter.elevator = req.query.elevator
+    if (req.query.month) {
+        const m = new Date(req.query.month + '-01')
+        const start = new Date(Date.UTC(m.getUTCFullYear(), m.getUTCMonth(), 1))
+        const end = new Date(Date.UTC(m.getUTCFullYear(), m.getUTCMonth() + 1, 1))
+        filter.timestamp = { $gte: start, $lt: end }
+    }
 
     const recs = await Record.find(filter)
         .populate('user', 'name')
