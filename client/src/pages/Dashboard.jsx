@@ -22,6 +22,15 @@ export default function Dashboard() {
   const maintainedList = elevators.filter(el => doneElevatorIds.has(el._id))
   const pendingList = elevators.filter(el => !doneElevatorIds.has(el._id))
 
+  const recordMap = {}
+  records.forEach(r => {
+    const id = r.elevator?._id || r.elevator
+    if (!id) return
+    if (!recordMap[id] || new Date(r.timestamp) > new Date(recordMap[id].timestamp)) {
+      recordMap[id] = r
+    }
+  })
+
   // group records by technician (id + name)
   const byTech = {}
   records.forEach(r => {
@@ -60,6 +69,8 @@ export default function Dashboard() {
               <th style={{ textAlign: 'left' }}>Name</th>
               <th style={{ textAlign: 'left' }}>Location</th>
               <th style={{ textAlign: 'left' }}>Assigned</th>
+              <th style={{ textAlign: 'left' }}>Maintained At</th>
+
               <th />
             </tr>
           </thead>
@@ -69,6 +80,7 @@ export default function Dashboard() {
                 <td>{el.name}</td>
                 <td>{el.location}</td>
                 <td>{new Date(el.assignedMonth).toLocaleDateString()}</td>
+                <td>{recordMap[el._id] ? new Date(recordMap[el._id].timestamp).toLocaleString() : ''}</td>
                 <td>
                   <button onClick={() => setSelected(el)}>Details</button>
                 </td>

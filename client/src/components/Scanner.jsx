@@ -22,6 +22,8 @@ export default function Scanner() {
 
     return () => {
       stopScanner();
+      sessionStorage.setItem('scanning', 'false');
+
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -41,6 +43,7 @@ export default function Scanner() {
         () => { }
       );
       startedRef.current = true;
+      sessionStorage.setItem('scanning', 'false');
       setScanning(true);
       setMsg('Point your camera at the QR code.');
     } catch (e) {
@@ -58,6 +61,7 @@ export default function Scanner() {
         console.warn('Stop failed:', e);
       }
       startedRef.current = false;
+      sessionStorage.setItem('scanning', 'false');
       setScanning(false);
     }
   };
@@ -72,8 +76,12 @@ export default function Scanner() {
       await api.post('/records', { elevatorId: qrData });
       alert('Maintenance logged!');
       navigate('/tech');
-    } catch {
+    } catch (err) {
       scannedRef.current = false;
+      if (err.response?.status === 400) {
+        alert(err.response.data?.msg || 'Already maintained this month');
+        return navigate('/tech');
+      }
       const retry = window.confirm('Invalid QR code. Try again?');
       if (!retry) return navigate('/tech');
       await startScanner();

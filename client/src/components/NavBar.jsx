@@ -8,7 +8,17 @@ export default function NavBar() {
   const navigate = useNavigate()
   const { setAuth } = useAuth();
 
+  const checkScanning = e => {
+    if (sessionStorage.getItem('scanning') === 'true') {
+      e.preventDefault();
+      alert('Please stop scanning before leaving this page.');
+      return true;
+    }
+    return false;
+  }
+
   const logout = () => {
+    if (checkScanning({ preventDefault: () => { } })) return;
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     setAuth({ token: null, user: null });
@@ -23,14 +33,14 @@ export default function NavBar() {
       <div className="nav-links">
         {user.role === 'admin' ? (
           <>
-            <Link to="/admin">Dashboard</Link>
-            <Link to="/users">Users</Link>
-            <Link to="/register">Create User</Link>
+            <Link to="/admin" onClick={checkScanning}>Dashboard</Link>
+            <Link to="/users" onClick={checkScanning}>Users</Link>
+            <Link to="/register" onClick={checkScanning}>Create User</Link>
           </>
         ) : (
           <>
-            <Link to="/tech">Home</Link>
-            <Link to="/scanner">Scan</Link>
+            <Link to="/tech" onClick={checkScanning}>Home</Link>
+            <Link to="/scanner" onClick={checkScanning}>Scan</Link>
           </>
         )}
         <button className="logout-btn" onClick={logout}>

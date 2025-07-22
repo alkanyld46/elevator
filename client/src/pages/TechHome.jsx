@@ -8,19 +8,23 @@ export default function TechHome() {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   const [all, setAll] = useState([]);
-  const [current, setCurrent] = useState([]);
+  const [due, setDue] = useState([]);
+  const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
 
   useEffect(() => {
     (async () => {
       try {
-        const [allRes, curRes] = await Promise.all([
+        const month = new Date().toISOString().slice(0, 7);
+        const [allRes, dueRes, recRes] = await Promise.all([
           api.get('/elevators'),            // all elevators
-          api.get('/elevators/current')     // maintained this month
+          api.get('/elevators/current'),    // elevators scheduled this month
+          api.get(`/records?month=${month}`) // maintenance records this month
         ]);
         setAll(allRes.data || []);
-        setCurrent(curRes.data || []);
+        setDue(dueRes.data || []);
+        setRecords(recRes.data || []);
       } catch (e) {
         setErr('Failed to load elevators');
       } finally {
@@ -30,9 +34,9 @@ export default function TechHome() {
   }, []);
 
   const unmaintained = useMemo(() => {
-    const maintainedIds = new Set(current.map(e => e._id));
-    return all.filter(e => !maintainedIds.has(e._id));
-  }, [all, current]);
+    const maintainedIds = new Set(records.map(r => r.elevator?._id || r.elevator));
+    return due.filter(el => !maintainedIds.has(el._id));
+  }, [due, records]);
 
   return (
     <div className="container my-4">
