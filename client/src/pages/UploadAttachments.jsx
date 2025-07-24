@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../utils/api';
 
@@ -6,6 +6,7 @@ export default function UploadAttachments() {
     const { id } = useParams();
     const [items, setItems] = useState([]);
     const [uploading, setUploading] = useState(false);
+    const fileRef = useRef(null);
     const navigate = useNavigate();
 
     const handleSubmit = async e => {
@@ -36,15 +37,30 @@ export default function UploadAttachments() {
             <h2>Upload Maintenance Photos</h2>
             <form onSubmit={handleSubmit}>
                 <input
+                    ref={fileRef}
                     type="file"
                     accept="image/*"
                     multiple
                     className="form-control mb-3"
+                    style={{ display: 'none' }}
                     onChange={e => {
                         const fs = Array.from(e.target.files);
-                        setItems(fs.map(f => ({ file: f, description: '' })));
+                        if (fs.length > 0) {
+                            setItems(itms => [
+                                ...itms,
+                                ...fs.map(f => ({ file: f, description: '' }))
+                            ]);
+                        }
+                        e.target.value = '';
                     }}
                 />
+                <button
+                    type="button"
+                    className="btn btn-secondary mb-3"
+                    onClick={() => fileRef.current?.click()}
+                >
+                    Add Photos
+                </button>
                 {items.map((item, idx) => (
                     <div className="mb-3" key={idx}>
                         <label className="form-label">{item.file.name}</label>
@@ -62,6 +78,17 @@ export default function UploadAttachments() {
                                 );
                             }}
                         />
+                        <button
+                            type="button"
+                            className="btn btn-link"
+                            onClick={() =>
+                                setItems(itms =>
+                                    itms.filter((_, i) => i !== idx)
+                                )
+                            }
+                        >
+                            Remove
+                        </button>
                     </div>
                 ))}
                 <button className="btn btn-primary" type="submit" disabled={uploading}>
