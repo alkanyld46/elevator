@@ -5,6 +5,11 @@ const cors = require('cors');
 const path = require('path');
 const connectDB = require('./config/db');
 
+const app = express();
+connectDB();
+
+app.use(cors());
+
 // Allow only your frontend’s origin (replace with your actual URL):
 app.use(
     cors({
@@ -17,10 +22,6 @@ app.use(
 // Enable CORS pre‑flight for all routes
 app.options('*', cors())
 
-const app = express();
-connectDB();
-
-app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
