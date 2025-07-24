@@ -5,6 +5,18 @@ const cors = require('cors');
 const path = require('path');
 const connectDB = require('./config/db');
 
+// Allow only your frontend’s origin (replace with your actual URL):
+app.use(
+    cors({
+        origin: 'https://elevatorfrontend.onrender.com',
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization']
+    })
+)
+
+// Enable CORS pre‑flight for all routes
+app.options('*', cors())
+
 const app = express();
 connectDB();
 
