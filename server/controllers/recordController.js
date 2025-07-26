@@ -59,29 +59,40 @@ exports.getAll = async (req, res) => {
 }
 
 exports.uploadAttachments = async (req, res) => {
-    console.log('raw needsRepair:', req.body.needsRepair, typeof req.body.needsRepair);
+    try {
+        // debug incoming payload
+        console.log('-- uploadAttachments payload --')
+        console.log('needsRepair:', req.body.needsRepair, typeof req.body.needsRepair)
+        console.log('files:', req.files.length, 'descriptions:', req.body.descriptions)
 
-    const rec = await Record.findById(req.params.id)
-    if (!rec) return res.status(404).json({ msg: 'Record not found' })
+        const rec = await Record.findById(req.params.id)
 
-    if (!req.files || !req.files.length) {
-        req.files = []
+        if (!rec) return res.status(404).json({ msg: 'Record not found' })
+
+        if (!req.files || !req.files.length) {
+            req.files = []
+        }
+
+        // — parse the incoming “true”/“false” string into a boolean —
+        rec.needsRepair = (req.body.needsRepair === 'true')
+        // Map uploaded files
+        const files = req.files.map((f, idx) => ({
+            file: f.filename,
+            description: descriptions[idx] || ''
+        }))
+
+        // Safely append and save
+        rec.attachments = (rec.attachments || []).concat(files)
+        rec.needsRepair = needsRepair
+
+        await rec.save()
+        return res.json(rec)
+    } catch (err) {
+        console.error('❌ uploadAttachments Error:', err)
+        // return a friendly JSON error
+        return res
+            .status(500)
+            .json({ msg: 'Failed to upload attachments', error: err.message })
     }
-
-    // — parse the incoming “true”/“false” string into a boolean —
-    rec.needsRepair = (req.body.needsRepair === 'true')
-
-    // Map uploaded files
-    const files = req.files.map((f, idx) => ({
-        file: f.filename,
-        description: descriptions[idx] || ''
-    }))
-
-    // Safely append and save
-    rec.attachments = (rec.attachments || []).concat(files)
-    rec.needsRepair = needsRepair
-
-    await rec.save()
-    return res.json(rec)
 }
 
