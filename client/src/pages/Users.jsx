@@ -29,7 +29,7 @@ export default function Users() {
 
   return (
     <div className="container">
-      <h2>Manage Users</h2>
+      <h2>User's Info</h2>
       <div className="mb-3" style={{ marginBottom: 10 }}>
         <button className="form-control" onClick={() => navigate('/admin')}>Back</button>
       </div>

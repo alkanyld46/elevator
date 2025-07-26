@@ -71,7 +71,7 @@ export default function Dashboard() {
       <div className="mb-3">
         <button className="btn btn-secondary" onClick={() => navigate('/elevators')}>Manage Elevators</button>
         <button className="btn btn-secondary ms-2" onClick={() => navigate('/users')}>
-          Manage Users
+          User's Info
         </button>
         <button className="btn btn-secondary ms-2" onClick={() => navigate('/register')}>
           Create User

@@ -10,6 +10,11 @@ connectDB();
 
 app.use(cors());
 
+// ← INSERT THIS HEALTH‑CHECK:
+app.get('/', (req, res) => {
+    res.send('OK')
+})
+
 // Allow only your frontend’s origin (replace with your actual URL):
 app.use(
     cors({

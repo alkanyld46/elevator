@@ -6,15 +6,22 @@ const User = require('../models/User')
 // @role   admin only
 exports.register = async (req, res) => {
     const { name, email, password, role, phone } = req.body
+    const lowerEmail = email.toLowerCase()
     const hashed = await bcrypt.hash(password, 12)
-    const user = await User.create({ name, email, password: hashed, role, phone })
+    const user = await User.create({
+        name,
+        email: lowerEmail,
+        password: hashed,
+        role,
+        phone,
+    })
     res.status(201).json({ id: user._id, name: user.name, email: user.email, role: user.role, phone: user.phone })
 }
 
 // @route  POST /api/auth/login
 exports.login = async (req, res) => {
     const { email, password } = req.body
-    const user = await User.findOne({ email })
+    const user = await User.findOne({ email: email.toLowerCase() })
     if (!user) return res.status(400).json({ msg: 'Invalid credentials' })
 
     const match = await bcrypt.compare(password, user.password)
