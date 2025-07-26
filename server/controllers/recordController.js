@@ -68,11 +68,13 @@ exports.uploadAttachments = async (req, res) => {
     let descriptions = req.body.descriptions
     if (!descriptions) descriptions = []
     if (!Array.isArray(descriptions)) descriptions = [descriptions]
+    const needsRepair = req.body.needsRepair === 'true'
     const files = req.files.map((f, idx) => ({
         file: f.filename,
         description: descriptions[idx] || ''
     }))
     rec.attachments = rec.attachments.concat(files)
+    rec.needsRepair = needsRepair
     await rec.save()
     res.json(rec)
 }

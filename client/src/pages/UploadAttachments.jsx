@@ -6,6 +6,7 @@ export default function UploadAttachments() {
     const { id } = useParams();
     const [items, setItems] = useState([]);
     const [uploading, setUploading] = useState(false);
+    const [needsRepair, setNeedsRepair] = useState(false);
     const fileRef = useRef(null);
     const navigate = useNavigate();
 
@@ -19,6 +20,7 @@ export default function UploadAttachments() {
             formData.append('files', item.file);
             formData.append('descriptions', item.description);
         });
+        formData.append('needsRepair', needsRepair);
         setUploading(true);
         try {
             await api.post(`/records/${id}/attachments`, formData);
@@ -91,6 +93,34 @@ export default function UploadAttachments() {
                         </button>
                     </div>
                 ))}
+                <div className="mb-3">
+                    <label className="form-label">Needs Repair?</label>
+                    <div>
+                        <input
+                            type="radio"
+                            id="repairYes"
+                            name="needsRepair"
+                            value="yes"
+                            checked={needsRepair === true}
+                            onChange={() => setNeedsRepair(true)}
+                        />
+                        <label htmlFor="repairYes" className="me-3 ms-1">
+                            Yes
+                        </label>
+                        <input
+                            type="radio"
+                            id="repairNo"
+                            name="needsRepair"
+                            value="no"
+                            checked={needsRepair === false}
+                            onChange={() => setNeedsRepair(false)}
+                        />
+                        <label htmlFor="repairNo" className="ms-1">
+                            No
+                        </label>
+                    </div>
+                </div>
+
                 <button className="btn btn-primary" type="submit" disabled={uploading}>
                     {uploading ? 'Uploading…' : 'Upload'}
                 </button>

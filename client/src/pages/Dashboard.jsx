@@ -94,7 +94,8 @@ export default function Dashboard() {
               <th style={{ textAlign: 'left' }}>Location</th>
               <th style={{ textAlign: 'left' }}>Assigned</th>
               <th style={{ textAlign: 'left' }}>Maintained At</th>
-
+              <th style={{ textAlign: 'left' }}>Technician</th>
+              <th style={{ textAlign: 'left' }}>Status</th>
               <th />
             </tr>
           </thead>
@@ -105,6 +106,8 @@ export default function Dashboard() {
                 <td>{el.location}</td>
                 <td>{new Date(el.assignedMonth).toLocaleDateString()}</td>
                 <td>{recordMap[el._id] ? new Date(recordMap[el._id].timestamp).toLocaleString() : ''}</td>
+                <td>{recordMap[el._id]?.user?.name || 'Unknown'}</td>
+                <td>{recordMap[el._id]?.needsRepair ? '❌' : '✅'}</td>
                 <td>
                   <button onClick={() => setSelected(el)}>Details</button>
                 </td>
