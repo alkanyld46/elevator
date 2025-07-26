@@ -63,7 +63,7 @@ exports.uploadAttachments = async (req, res) => {
     if (!rec) return res.status(404).json({ msg: 'Record not found' })
 
     if (!req.files || !req.files.length) {
-        return res.status(400).json({ msg: 'No files uploaded' })
+        req.files = []
     }
 
     // Normalize descriptions

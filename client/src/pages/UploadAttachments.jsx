@@ -12,10 +12,14 @@ export default function UploadAttachments() {
 
     const handleSubmit = async e => {
         e.preventDefault();
-        if (!items.length) {
-            return navigate('/tech');
-        }
+        // if (!items.length) {
+        //     return navigate('/tech');
+        // }
         const formData = new FormData();
+        // Always send the needsRepair status even if no photos are uploaded
+        // so that the admin dashboard reflects the technician's choice.
+        // Previously we returned early when no files were selected which left
+        // the record's needsRepair flag at its default value (false)
         items.forEach(item => {
             formData.append('files', item.file);
             formData.append('descriptions', item.description);
