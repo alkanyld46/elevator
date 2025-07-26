@@ -59,6 +59,8 @@ exports.getAll = async (req, res) => {
 }
 
 exports.uploadAttachments = async (req, res) => {
+    console.log('raw needsRepair:', req.body.needsRepair, typeof req.body.needsRepair);
+
     const rec = await Record.findById(req.params.id)
     if (!rec) return res.status(404).json({ msg: 'Record not found' })
 
@@ -66,19 +68,8 @@ exports.uploadAttachments = async (req, res) => {
         req.files = []
     }
 
-    // Normalize descriptions
-    let descriptions = req.body.descriptions || []
-    if (!Array.isArray(descriptions)) descriptions = [descriptions]
-
-    // Robust needsRepair parsing
-    let needsRepair
-    if (req.body.needsRepair === true) {
-        needsRepair = true
-    } else if (req.body.needsRepair === false) {
-        needsRepair = false
-    } else {
-        needsRepair = rec.needsRepair  // leave unchanged if missing/invalid
-    }
+    // — parse the incoming “true”/“false” string into a boolean —
+    rec.needsRepair = (req.body.needsRepair === 'true')
 
     // Map uploaded files
     const files = req.files.map((f, idx) => ({
