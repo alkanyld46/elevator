@@ -60,39 +60,36 @@ exports.getAll = async (req, res) => {
 
 exports.uploadAttachments = async (req, res) => {
     try {
-        // debug incoming payload
-        console.log('-- uploadAttachments payload --')
-        console.log('needsRepair:', req.body.needsRepair, typeof req.body.needsRepair)
-        console.log('files:', req.files.length, 'descriptions:', req.body.descriptions)
+        // 1. Find the record
+        const rec = await Record.findById(req.params.id);
+        if (!rec) return res.status(404).json({ msg: 'Record not found' });
 
-        const rec = await Record.findById(req.params.id)
+        // 2. Ensure req.files is always an array
+        const filesArr = Array.isArray(req.files) ? req.files : [];
 
-        if (!rec) return res.status(404).json({ msg: 'Record not found' })
+        // 3. Normalize descriptions into an array
+        let descriptions = req.body.descriptions || [];
+        if (!Array.isArray(descriptions)) descriptions = [descriptions];
 
-        if (!req.files || !req.files.length) {
-            req.files = []
-        }
+        // 4. Parse the incoming "true"/"false" string into a boolean
+        rec.needsRepair = (req.body.needsRepair === 'true');
 
-        // — parse the incoming “true”/“false” string into a boolean —
-        rec.needsRepair = (req.body.needsRepair === 'true')
-        // Map uploaded files
-        const files = req.files.map((f, idx) => ({
+        // 5. Map uploaded files to your schema
+        const newFiles = filesArr.map((f, idx) => ({
             file: f.filename,
             description: descriptions[idx] || ''
-        }))
+        }));
 
-        // Safely append and save
-        rec.attachments = (rec.attachments || []).concat(files)
-        rec.needsRepair = needsRepair
+        // 6. Append attachments and save
+        rec.attachments = (rec.attachments || []).concat(newFiles);
+        await rec.save();
 
-        await rec.save()
-        return res.json(rec)
+        // 7. Return the updated record
+        return res.json(rec);
     } catch (err) {
-        console.error('❌ uploadAttachments Error:', err)
-        // return a friendly JSON error
+        console.error('❌ uploadAttachments Error:', err);
         return res
             .status(500)
-            .json({ msg: 'Failed to upload attachments', error: err.message })
+            .json({ msg: 'Failed to upload attachments', error: err.message });
     }
-}
-
+};
