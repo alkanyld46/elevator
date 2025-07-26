@@ -39,8 +39,11 @@ export default function Scanner() {
         setMsg('No camera found');
         return;
       }
+      let camId = cams[0].id;
+      const backCam = cams.find(c => /back|rear|environment/i.test(c.label));
+      if (backCam) camId = backCam.id;
       await html5QrCodeRef.current.start(
-        cams[0].id,
+        camId,
         { fps: 10, qrbox: 250 },
         onScanSuccess,
         () => { }

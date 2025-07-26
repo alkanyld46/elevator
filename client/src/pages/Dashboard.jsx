@@ -68,7 +68,7 @@ export default function Dashboard() {
   return (
     <div className="container my-4">
       <h2>Admin Dashboard</h2>
-      <div className="mb-3">
+      <div className="mb-3" style={{ display: 'flex' }}>
         <button className="btn btn-secondary" onClick={() => navigate('/elevators')}>Manage Elevators</button>
         <button className="btn btn-secondary ms-2" onClick={() => navigate('/users')}>
           User's Info
