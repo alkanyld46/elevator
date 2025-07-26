@@ -72,9 +72,9 @@ exports.uploadAttachments = async (req, res) => {
 
     // Robust needsRepair parsing
     let needsRepair
-    if (req.body.needsRepair === 'true' || req.body.needsRepair === true) {
+    if (req.body.needsRepair === true) {
         needsRepair = true
-    } else if (req.body.needsRepair === 'false' || req.body.needsRepair === false) {
+    } else if (req.body.needsRepair === false) {
         needsRepair = false
     } else {
         needsRepair = rec.needsRepair  // leave unchanged if missing/invalid
