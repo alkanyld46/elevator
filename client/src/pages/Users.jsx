@@ -28,24 +28,32 @@ export default function Users() {
 
 
   return (
-    <div className="container">
+    <div className="container my-4">
       <h2>User's Info</h2>
-      <div className="mb-3" style={{ marginBottom: 10 }}>
-        <button className="form-control" onClick={() => navigate('/admin')}>Back</button>
+      <div className="mb-3">
+        <button className="btn btn-secondary" onClick={() => navigate('/admin')}>Back</button>
       </div>
-      <ul >
-        {list.map(u => (
-          <li className="d-flex align-items-center gap-2 mb-3" key={u._id} style={{ marginBottom: 6 }}>
-            {u.name} ({u.email})
-            <button style={{ marginLeft: 10 }} onClick={() => showInfo(u._id)}>
-              Info
-            </button>
-            <button style={{ marginLeft: 10 }} onClick={() => remove(u._id)}>
-              Delete
-            </button>
-          </li>
-        ))}
-      </ul>
+      <table className="table table-sm">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {list.map(u => (
+            <tr key={u._id}>
+              <td>{u.name}</td>
+              <td>{u.email}</td>
+              <td>
+                <button className="btn btn-link p-0 me-2" onClick={() => showInfo(u._id)}>Info</button>
+                <button className="btn btn-link text-danger p-0" onClick={() => remove(u._id)}>Delete</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   )
 }
