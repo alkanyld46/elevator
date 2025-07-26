@@ -61,20 +61,36 @@ exports.getAll = async (req, res) => {
 exports.uploadAttachments = async (req, res) => {
     const rec = await Record.findById(req.params.id)
     if (!rec) return res.status(404).json({ msg: 'Record not found' })
-    if (!req.files || req.files.length === 0) {
+
+    if (!req.files || !req.files.length) {
         return res.status(400).json({ msg: 'No files uploaded' })
     }
 
-    let descriptions = req.body.descriptions
-    if (!descriptions) descriptions = []
+    // Normalize descriptions
+    let descriptions = req.body.descriptions || []
     if (!Array.isArray(descriptions)) descriptions = [descriptions]
-    const needsRepair = req.body.needsRepair === 'true'
+
+    // Robust needsRepair parsing
+    let needsRepair
+    if (req.body.needsRepair === 'true' || req.body.needsRepair === true) {
+        needsRepair = true
+    } else if (req.body.needsRepair === 'false' || req.body.needsRepair === false) {
+        needsRepair = false
+    } else {
+        needsRepair = rec.needsRepair  // leave unchanged if missing/invalid
+    }
+
+    // Map uploaded files
     const files = req.files.map((f, idx) => ({
         file: f.filename,
         description: descriptions[idx] || ''
     }))
-    rec.attachments = rec.attachments.concat(files)
+
+    // Safely append and save
+    rec.attachments = (rec.attachments || []).concat(files)
     rec.needsRepair = needsRepair
+
     await rec.save()
-    res.json(rec)
+    return res.json(rec)
 }
+
