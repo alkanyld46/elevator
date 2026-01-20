@@ -1,0 +1,18 @@
+{
+    "indexes": [
+        {
+            "v": {
+                "$numberInt": "2"
+            },
+            "key": {
+                "_id": {
+                    "$numberInt": "1"
+                }
+            },
+            "name": "_id_"
+        }
+    ],
+    "uuid": "8d553ccb998d4ad4920253d40c246de3",
+    "collectionName": "maintenancerecords",
+    "type": "collection"
+}

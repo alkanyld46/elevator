@@ -1,15 +1,8 @@
 import axios from 'axios'
 import { getStoredToken, clearAuth } from './storage'
 
-// DEBUG: Log the API URL being used
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api'
-console.log('=== API DEBUG ===')
-console.log('REACT_APP_API_URL from env:', process.env.REACT_APP_API_URL)
-console.log('API_URL being used:', API_URL)
-console.log('=================')
-
 const api = axios.create({
-    baseURL: API_URL,
+    baseURL: process.env.REACT_APP_API_URL || 'https://elevator-a8d0.onrender.com/api',
 })
 
 api.interceptors.request.use(cfg => {

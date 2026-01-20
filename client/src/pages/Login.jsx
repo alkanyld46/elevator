@@ -20,32 +20,17 @@ export default function Login() {
     setError('')
     setLoading(true)
 
-    console.log('=== LOGIN DEBUG ===')
-    console.log('Attempting login with email:', email)
-    console.log('API base URL:', api.defaults.baseURL)
-    console.log('Full login URL:', api.defaults.baseURL + '/auth/login')
-
     try {
-      console.log('Sending login request...')
       const { data } = await api.post('/auth/login', { email, password })
-      console.log('Login successful! Response:', data)
       localStorage.setItem('token', data.token)
       safeSetJSON('user', data.user)
       setAuth({ token: data.token, user: data.user })
       const target = ROLE_HOME[data.user.role] || '/login'
-      console.log('Redirecting to:', target)
       navigate(target, { replace: true })
     } catch (err) {
-      console.error('=== LOGIN ERROR ===')
-      console.error('Error object:', err)
-      console.error('Error response:', err.response)
-      console.error('Error message:', err.message)
-      console.error('Request URL:', err.config?.url)
-      console.error('Request baseURL:', err.config?.baseURL)
       setError(err.response?.data?.msg || 'Login failed. Please check your credentials.')
     } finally {
       setLoading(false)
-      console.log('===================')
     }
   }
 

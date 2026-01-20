@@ -23,10 +23,6 @@ if (process.env.CORS_ORIGINS) {
     });
 }
 
-console.log('=== CORS DEBUG ===');
-console.log('Allowed origins:', allowedOrigins);
-console.log('==================');
-
 app.use(cors({
     origin: function(origin, callback) {
         // Allow requests with no origin (mobile apps, curl, etc.)
@@ -35,7 +31,6 @@ app.use(cors({
         if (allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
-            console.log('CORS blocked origin:', origin);
             callback(new Error('Not allowed by CORS'));
         }
     },
