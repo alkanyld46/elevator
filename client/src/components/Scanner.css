@@ -1,6 +1,15 @@
+/* Scanner Component Styles */
+
 .scanner {
     padding: 20px;
     text-align: center;
+}
+
+.scanner-container {
+  position: relative;
+  background: #1a1d29;
+  border-radius: 12px;
+  overflow: hidden;
 }
 
 #reader video,
@@ -11,12 +20,55 @@
 
 #reader {
     width: 100%;
-    max-width: 400px;
+    max-width: 100%;
     margin: auto;
+    border-radius: 12px;
+    overflow: hidden;
 }
 
+/* Hide default dashboard */
+#reader__dashboard {
+  display: none !important;
+}
+
+/* Scanning animation */
+@keyframes scan-line {
+  0% {
+    top: 0;
+  }
+  50% {
+    top: calc(100% - 4px);
+  }
+  100% {
+    top: 0;
+  }
+}
+
+.scanner-container::after {
+  content: '';
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #667eea, transparent);
+  animation: scan-line 2s ease-in-out infinite;
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+/* Camera permission message styling */
+#reader__status_span {
+  color: #6c757d !important;
+  font-size: 0.875rem;
+}
+
+/* Responsive adjustments */
 @media (max-width: 600px) {
     .scanner {
         padding: 10px;
+    }
+    
+    .scanner-container {
+        min-height: 250px;
     }
 }

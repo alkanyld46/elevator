@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Container, Row, Col, Card, Table, Badge, Button, Modal, Form, Spinner } from 'react-bootstrap'
+import { FiActivity, FiCheckCircle, FiClock, FiUsers, FiSettings, FiUserPlus, FiX, FiDownload, FiAlertTriangle } from 'react-icons/fi'
 import api from '../utils/api'
 import { format } from 'date-fns'
 
@@ -7,14 +9,28 @@ export default function Dashboard() {
   const [elevators, setElevators] = useState([])
   const [records, setRecords] = useState([])
   const [selectedTech, setSelectedTech] = useState('')
-  const [selected, setSelected] = useState(null) // modal elevator
+  const [selected, setSelected] = useState(null)
   const [attachments, setAttachments] = useState([])
+  const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
   useEffect(() => {
-    const month = new Date().toISOString().slice(0, 7)
-    api.get('/elevators/current').then(res => setElevators(res.data))
-    api.get(`/records?month=${month}`).then(res => setRecords(res.data))
+    const fetchData = async () => {
+      try {
+        const month = new Date().toISOString().slice(0, 7)
+        const [elevRes, recRes] = await Promise.all([
+          api.get('/elevators/current'),
+          api.get(`/records?month=${month}`)
+        ])
+        setElevators(elevRes.data)
+        setRecords(recRes.data)
+      } catch (err) {
+        // Handle error silently
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
   }, [])
 
   useEffect(() => {
@@ -24,7 +40,6 @@ export default function Dashboard() {
       res.data.forEach(r => {
         (r.attachments || []).forEach(a => {
           if (!a) return
-
           if (typeof a === 'string') {
             arr.push({ file: a, description: '' })
           } else if (a.file || a.filename) {
@@ -55,7 +70,6 @@ export default function Dashboard() {
     }
   })
 
-  // group records by technician (id + name)
   const byTech = {}
   records.forEach(r => {
     const id = r.user?._id || 'unknown'
@@ -64,174 +78,312 @@ export default function Dashboard() {
     byTech[id].list.push(r)
   })
 
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <div className="spinner-modern" />
+      </div>
+    )
+  }
 
   return (
-    <div className="container my-4">
-      <h2>Admin Dashboard</h2>
-      <div className="mb-3" style={{ display: 'flex' }}>
-        <button className="btn btn-secondary" onClick={() => navigate('/elevators')}>Manage Elevators</button>
-        <button className="btn btn-secondary ms-2" onClick={() => navigate('/users')}>
-          User's Info
-        </button>
-        <button className="btn btn-secondary ms-2" onClick={() => navigate('/register')}>
-          Create User
-        </button>
-      </div>
-
-      <p>Total elevators: {total}</p>
-      <p>Maintained: {done}</p>
-      <p>Pending: {pending}</p>
-
-      {/* Version 2 maintained/pending tables */}
-      <h3>Maintained Elevators</h3>
-      {maintainedList.length === 0 ? (
-        <p>No elevators maintained yet.</p>
-      ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr>
-              <th style={{ textAlign: 'left' }}>Name</th>
-              <th style={{ textAlign: 'left' }}>Location</th>
-              <th style={{ textAlign: 'left' }}>Assigned</th>
-              <th style={{ textAlign: 'left' }}>Maintained At</th>
-              <th style={{ textAlign: 'left' }}>Technician</th>
-              <th style={{ textAlign: 'left' }}>Status</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {maintainedList.map(el => (
-              <tr key={el._id}>
-                <td>{el.name}</td>
-                <td>{el.location}</td>
-                <td>{new Date(el.assignedMonth).toLocaleDateString()}</td>
-                <td>{recordMap[el._id] ? new Date(recordMap[el._id].timestamp).toLocaleString() : ''}</td>
-                <td>{recordMap[el._id]?.user?.name || 'Unknown'}</td>
-                <td>{recordMap[el._id]?.needsRepair ? '❌' : '✅'}</td>
-                <td>
-                  <button onClick={() => setSelected(el)}>Details</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-
-      <h3 style={{ marginTop: 20 }}>Pending Elevators For This Month</h3>
-      {pendingList.length === 0 ? (
-        <p>All elevators maintained.</p>
-      ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr>
-              <th style={{ textAlign: 'left' }}>Name</th>
-              <th style={{ textAlign: 'left' }}>Location</th>
-              <th style={{ textAlign: 'left' }}>Assigned</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {pendingList.map(el => (
-              <tr key={el._id}>
-                <td>{el.name}</td>
-                <td>{el.location}</td>
-                <td>{new Date(el.assignedMonth).toLocaleDateString()}</td>
-                <td>
-                  <button onClick={() => setSelected(el)}>Details</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-
-      {/* Version 1 technician filter/list */}
-      <div style={{ display: 'flex', alignItems: 'center', marginTop: 30 }}>
-        <h3 style={{ margin: 0 }}>By Technician</h3>
-        <select
-          value={selectedTech}
-          onChange={e => setSelectedTech(e.target.value)}
-          style={{ marginLeft: 10 }}
-        >
-          <option value="">None Selected</option>
-          {Object.entries(byTech).map(([id, info]) => (
-            <option key={id} value={id}>
-              {info.name}
-            </option>
-          ))}
-        </select>
-      </div>
-      {Object.keys(byTech).length === 0 && <p>No maintenance yet.</p>}
-      {selectedTech === '' ? (
-        Object.keys(byTech).length > 0 && <p>Please select a technician.</p>
-      ) : (
+    <Container className="py-4 fade-in">
+      {/* Header */}
+      <div className="page-header d-flex flex-wrap justify-content-between align-items-center">
         <div>
-          <strong>{byTech[selectedTech]?.name}</strong>
-          <ul className="list-group mt-1">
-            {byTech[selectedTech]?.list.map(rec => (
-              <li key={rec._id} className="list-group-item">
-                {rec.elevator?.name} @ {rec.elevator?.location} —{' '}
-                {format(new Date(rec.timestamp), 'PP p')}
-              </li>
-            ))}
-          </ul>
+          <h1 className="page-title">Admin Dashboard</h1>
+          <p className="page-subtitle">Monitor elevator maintenance progress</p>
         </div>
-      )}
+        <div className="d-flex gap-2 mt-3 mt-md-0">
+          <Button variant="outline-secondary" onClick={() => navigate('/elevators')}>
+            <FiSettings className="me-2" />
+            Manage Elevators
+          </Button>
+          <Button variant="outline-secondary" onClick={() => navigate('/users')}>
+            <FiUsers className="me-2" />
+            Users
+          </Button>
+          <Button className="btn-gradient-primary" onClick={() => navigate('/register')}>
+            <FiUserPlus className="me-2" />
+            Create User
+          </Button>
+        </div>
+      </div>
 
-      {/* Details modal */}
-      {selected && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000
-          }}
-        >
-          <div style={{ background: '#fff', padding: 20, borderRadius: 4, width: '90%', maxWidth: 400 }}>
-            <h3>{selected.name}</h3>
-            <p><strong>Location:</strong> {selected.location}</p>
-            <p><strong>QR Code:</strong> {selected.qrCodeData}</p>
-            <p><strong>Assigned Month:</strong> {new Date(selected.assignedMonth).toLocaleDateString()}</p>
-            {attachments.length > 0 && (
-              <div className="mt-3">
-                <h4>Attachments</h4>
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>Description</th>
-                      <th>Download</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {attachments.map((a, i) => (
-                      <tr key={i}>
-                        <td>{a.description || ''}</td>
-                        <td>
-                          {a.file ? (
-                            <a
-                              href={`${api.defaults.baseURL.replace('/api', '')}/uploads/${a.file}`}
-                              download
-                              target="_blank" rel="noopener noreferrer"
-                            >
-                              Download
-                            </a>
-                          ) : (
-                            'N/A'
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+      {/* Stats Cards */}
+      <Row className="g-4 mb-4">
+        <Col xs={12} sm={6} lg={3}>
+          <div className="stat-card primary">
+            <div className="d-flex justify-content-between align-items-start">
+              <div>
+                <div className="stat-number">{total}</div>
+                <div className="stat-label">Total Elevators</div>
               </div>
-            )}
-            <button onClick={() => { setSelected(null); setAttachments([]); }}>OK</button>          </div>
-        </div>
-      )}
-    </div>
+              <FiActivity size={24} className="text-primary opacity-50" />
+            </div>
+          </div>
+        </Col>
+        <Col xs={12} sm={6} lg={3}>
+          <div className="stat-card success">
+            <div className="d-flex justify-content-between align-items-start">
+              <div>
+                <div className="stat-number">{done}</div>
+                <div className="stat-label">Maintained</div>
+              </div>
+              <FiCheckCircle size={24} className="text-success opacity-50" />
+            </div>
+          </div>
+        </Col>
+        <Col xs={12} sm={6} lg={3}>
+          <div className="stat-card warning">
+            <div className="d-flex justify-content-between align-items-start">
+              <div>
+                <div className="stat-number">{pending}</div>
+                <div className="stat-label">Pending</div>
+              </div>
+              <FiClock size={24} className="text-warning opacity-50" />
+            </div>
+          </div>
+        </Col>
+        <Col xs={12} sm={6} lg={3}>
+          <div className="stat-card primary">
+            <div className="d-flex justify-content-between align-items-start">
+              <div>
+                <div className="stat-number">{Object.keys(byTech).length}</div>
+                <div className="stat-label">Active Technicians</div>
+              </div>
+              <FiUsers size={24} className="text-primary opacity-50" />
+            </div>
+          </div>
+        </Col>
+      </Row>
+
+      {/* Maintained Elevators */}
+      <Card className="card-modern mb-4">
+        <Card.Header className="bg-white border-0 pt-4 px-4">
+          <div className="d-flex align-items-center">
+            <FiCheckCircle className="text-success me-2" size={20} />
+            <h5 className="mb-0 fw-bold">Maintained Elevators</h5>
+            <Badge bg="success" className="ms-2">{maintainedList.length}</Badge>
+          </div>
+        </Card.Header>
+        <Card.Body className="p-0">
+          {maintainedList.length === 0 ? (
+            <div className="empty-state">
+              <FiCheckCircle className="empty-state-icon" />
+              <div className="empty-state-title">No elevators maintained yet</div>
+              <p className="text-muted">Completed maintenance will appear here</p>
+            </div>
+          ) : (
+            <div className="table-responsive">
+              <Table className="table-modern mb-0">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Location</th>
+                    <th>Assigned</th>
+                    <th>Maintained At</th>
+                    <th>Technician</th>
+                    <th>Status</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {maintainedList.map(el => (
+                    <tr key={el._id}>
+                      <td className="fw-semibold">{el.name}</td>
+                      <td className="text-muted">{el.location}</td>
+                      <td>{new Date(el.assignedMonth).toLocaleDateString()}</td>
+                      <td>{recordMap[el._id] ? format(new Date(recordMap[el._id].timestamp), 'PPp') : ''}</td>
+                      <td>{recordMap[el._id]?.user?.name || 'Unknown'}</td>
+                      <td>
+                        {recordMap[el._id]?.needsRepair ? (
+                          <Badge className="badge-status badge-danger">
+                            <FiAlertTriangle className="me-1" />
+                            Needs Repair
+                          </Badge>
+                        ) : (
+                          <Badge className="badge-status badge-success">
+                            <FiCheckCircle className="me-1" />
+                            OK
+                          </Badge>
+                        )}
+                      </td>
+                      <td>
+                        <Button variant="link" size="sm" onClick={() => setSelected(el)}>
+                          Details
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </div>
+          )}
+        </Card.Body>
+      </Card>
+
+      {/* Pending Elevators */}
+      <Card className="card-modern mb-4">
+        <Card.Header className="bg-white border-0 pt-4 px-4">
+          <div className="d-flex align-items-center">
+            <FiClock className="text-warning me-2" size={20} />
+            <h5 className="mb-0 fw-bold">Pending This Month</h5>
+            <Badge bg="warning" text="dark" className="ms-2">{pendingList.length}</Badge>
+          </div>
+        </Card.Header>
+        <Card.Body className="p-0">
+          {pendingList.length === 0 ? (
+            <div className="empty-state">
+              <FiCheckCircle className="empty-state-icon text-success" />
+              <div className="empty-state-title">All caught up!</div>
+              <p className="text-muted">All scheduled elevators have been maintained</p>
+            </div>
+          ) : (
+            <div className="table-responsive">
+              <Table className="table-modern mb-0">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Location</th>
+                    <th>Assigned Date</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pendingList.map(el => (
+                    <tr key={el._id}>
+                      <td className="fw-semibold">{el.name}</td>
+                      <td className="text-muted">{el.location}</td>
+                      <td>{new Date(el.assignedMonth).toLocaleDateString()}</td>
+                      <td>
+                        <Button variant="link" size="sm" onClick={() => setSelected(el)}>
+                          Details
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </div>
+          )}
+        </Card.Body>
+      </Card>
+
+      {/* By Technician */}
+      <Card className="card-modern mb-4">
+        <Card.Header className="bg-white border-0 pt-4 px-4">
+          <div className="d-flex flex-wrap align-items-center gap-3">
+            <div className="d-flex align-items-center">
+              <FiUsers className="text-primary me-2" size={20} />
+              <h5 className="mb-0 fw-bold">By Technician</h5>
+            </div>
+            <Form.Select
+              className="w-auto form-control-modern"
+              value={selectedTech}
+              onChange={e => setSelectedTech(e.target.value)}
+              style={{ minWidth: 200 }}
+            >
+              <option value="">Select a technician...</option>
+              {Object.entries(byTech).map(([id, info]) => (
+                <option key={id} value={id}>{info.name} ({info.list.length})</option>
+              ))}
+            </Form.Select>
+          </div>
+        </Card.Header>
+        <Card.Body>
+          {Object.keys(byTech).length === 0 ? (
+            <div className="empty-state">
+              <FiUsers className="empty-state-icon" />
+              <div className="empty-state-title">No maintenance records yet</div>
+            </div>
+          ) : selectedTech === '' ? (
+            <p className="text-muted text-center py-4">Please select a technician to view their work</p>
+          ) : (
+            <div className="list-group list-group-modern">
+              {byTech[selectedTech]?.list.map(rec => (
+                <div key={rec._id} className="list-group-item">
+                  <div className="d-flex justify-content-between align-items-center">
+                    <div>
+                      <strong>{rec.elevator?.name}</strong>
+                      <span className="text-muted ms-2">@ {rec.elevator?.location}</span>
+                    </div>
+                    <Badge bg="light" text="dark">
+                      {format(new Date(rec.timestamp), 'PP p')}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card.Body>
+      </Card>
+
+      {/* Details Modal */}
+      <Modal 
+        show={!!selected} 
+        onHide={() => { setSelected(null); setAttachments([]) }}
+        centered
+        className="modal-modern"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>{selected?.name}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <div className="mb-3">
+            <strong>Location:</strong> <span className="text-muted">{selected?.location}</span>
+          </div>
+          <div className="mb-3">
+            <strong>QR Code:</strong> <code className="bg-light px-2 py-1 rounded">{selected?.qrCodeData}</code>
+          </div>
+          <div className="mb-3">
+            <strong>Assigned Month:</strong> <span className="text-muted">{selected?.assignedMonth && new Date(selected.assignedMonth).toLocaleDateString()}</span>
+          </div>
+          
+          {attachments.length > 0 && (
+            <>
+              <hr />
+              <h6 className="fw-bold mb-3">Attachments ({attachments.length})</h6>
+              <Table size="sm" className="table-modern">
+                <thead>
+                  <tr>
+                    <th>Description</th>
+                    <th>Download</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {attachments.map((a, i) => (
+                    <tr key={i}>
+                      <td>{a.description || <span className="text-muted">No description</span>}</td>
+                      <td>
+                        {a.file ? (
+                          <a
+                            href={`${api.defaults.baseURL.replace('/api', '')}/uploads/${a.file}`}
+                            download
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn btn-sm btn-outline-primary"
+                          >
+                            <FiDownload className="me-1" />
+                            Download
+                          </a>
+                        ) : (
+                          <span className="text-muted">N/A</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => { setSelected(null); setAttachments([]) }}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    </Container>
   )
 }

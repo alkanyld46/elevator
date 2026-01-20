@@ -8,29 +8,51 @@ const connectDB = require('./config/db');
 const app = express();
 connectDB();
 
-app.use(cors());
+// CORS configuration - supports both local dev and production
+const allowedOrigins = [
+    'http://localhost:3000',
+    'https://elevatorfrontend.onrender.com'
+];
 
-// ← INSERT THIS HEALTH‑CHECK:
+// Add any origins from environment variable
+if (process.env.CORS_ORIGINS) {
+    process.env.CORS_ORIGINS.split(',').forEach(origin => {
+        if (!allowedOrigins.includes(origin.trim())) {
+            allowedOrigins.push(origin.trim());
+        }
+    });
+}
+
+console.log('=== CORS DEBUG ===');
+console.log('Allowed origins:', allowedOrigins);
+console.log('==================');
+
+app.use(cors({
+    origin: function(origin, callback) {
+        // Allow requests with no origin (mobile apps, curl, etc.)
+        if (!origin) return callback(null, true);
+        
+        if (allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            console.log('CORS blocked origin:', origin);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+}));
+
+// Health check endpoint
 app.get('/', (req, res) => {
     res.send('OK')
 })
 
-// Allow only your frontend’s origin (replace with your actual URL):
-app.use(
-    cors({
-        origin: 'https://elevatorfrontend.onrender.com',
-        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization']
-    })
-)
-
-// Enable CORS pre‑flight for all routes
-app.options(/.*/, cors())
-
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Mount routes (you’ll create these next)
+// Mount routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/elevators', require('./routes/elevatorRoutes'));
 app.use('/api/records', require('./routes/recordRoutes'));

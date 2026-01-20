@@ -1,76 +1,138 @@
 import React from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-// Bootstrap navbar for responsive design
-import { useAuth } from '../auth';
+import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { Navbar, Nav, Container, Button } from 'react-bootstrap'
+import { FiHome, FiUsers, FiUserPlus, FiGrid, FiCamera, FiLogOut } from 'react-icons/fi'
+import { useAuth } from '../auth'
+import { getStoredUser, clearAuth } from '../utils/storage'
 
 export default function NavBar() {
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  const user = getStoredUser() || {}
   const navigate = useNavigate()
-  const { setAuth } = useAuth();
+  const location = useLocation()
+  const { setAuth } = useAuth()
 
   // Always dispatch a scanner stop event when navigating away
-  // from pages or logging out. The scanner listens for this
-  // event and will ignore it if it isn't running
   const stopScanIfNeeded = () => {
     window.dispatchEvent(new Event('forceStopScanner'))
-
   }
 
   const logout = () => {
     stopScanIfNeeded()
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    setAuth({ token: null, user: null });
+    clearAuth()
+    setAuth({ token: null, user: null })
     navigate('/login', { replace: true })
   }
+
+  const isActive = (path) => location.pathname === path
 
   if (!user.role) return null
 
   return (
-    <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
-      <div className="container-fluid">
-        <Link className="navbar-brand" to={user.role === 'admin' ? '/admin' : '/tech'} onClick={stopScanIfNeeded}>
-          Elevator
-        </Link>
-        <button
-          className="navbar-toggler"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#navbarSupportedContent"
-          aria-controls="navbarSupportedContent"
-          aria-expanded="false"
-          aria-label="Toggle navigation"
+    <Navbar expand="lg" className="navbar-modern" variant="dark" sticky="top">
+      <Container>
+        <Navbar.Brand 
+          as={Link} 
+          to={user.role === 'admin' ? '/admin' : '/tech'} 
+          onClick={stopScanIfNeeded}
+          className="d-flex align-items-center"
         >
-          <span className="navbar-toggler-icon" />
-        </button>
-        <div className="collapse navbar-collapse" id="navbarSupportedContent">
-          <ul className="navbar-nav me-auto mb-2 mb-lg-0">
+          <div style={{
+            width: 36,
+            height: 36,
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            borderRadius: 8,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginRight: 10
+          }}>
+            <FiGrid size={18} color="white" />
+          </div>
+          <span style={{ 
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            WebkitBackgroundClip: 'text',
+            backgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            fontWeight: 700
+          }}>
+            ElevatorPro
+          </span>
+        </Navbar.Brand>
+        
+        <Navbar.Toggle aria-controls="navbar-nav" />
+        
+        <Navbar.Collapse id="navbar-nav">
+          <Nav className="me-auto">
             {user.role === 'admin' ? (
               <>
-                <li className="nav-item">
-                  <Link className="nav-link" to="/admin" onClick={stopScanIfNeeded}>Dashboard</Link>
-                </li>
-                <li className="nav-item">
-                  <Link className="nav-link" to="/users" onClick={stopScanIfNeeded}>Users</Link>
-                </li>
-                <li className="nav-item">
-                  <Link className="nav-link" to="/register" onClick={stopScanIfNeeded}>Create User</Link>
-                </li>
+                <Nav.Link
+                  as={Link}
+                  to="/admin"
+                  onClick={stopScanIfNeeded}
+                  className={isActive('/admin') ? 'active' : ''}
+                >
+                  <FiHome className="me-2" />
+                  Dashboard
+                </Nav.Link>
+                <Nav.Link
+                  as={Link}
+                  to="/users"
+                  onClick={stopScanIfNeeded}
+                  className={isActive('/users') ? 'active' : ''}
+                >
+                  <FiUsers className="me-2" />
+                  Users
+                </Nav.Link>
+                <Nav.Link
+                  as={Link}
+                  to="/register"
+                  onClick={stopScanIfNeeded}
+                  className={isActive('/register') ? 'active' : ''}
+                >
+                  <FiUserPlus className="me-2" />
+                  Create User
+                </Nav.Link>
               </>
             ) : (
               <>
-                <li className="nav-item">
-                  <Link className="nav-link" to="/tech" onClick={stopScanIfNeeded}>Home</Link>
-                </li>
-                <li className="nav-item">
-                  <Link className="nav-link" to="/scanner" onClick={stopScanIfNeeded}>Scan</Link>
-                </li>
+                <Nav.Link
+                  as={Link}
+                  to="/tech"
+                  onClick={stopScanIfNeeded}
+                  className={isActive('/tech') ? 'active' : ''}
+                >
+                  <FiHome className="me-2" />
+                  Home
+                </Nav.Link>
+                <Nav.Link
+                  as={Link}
+                  to="/scanner"
+                  onClick={stopScanIfNeeded}
+                  className={isActive('/scanner') ? 'active' : ''}
+                >
+                  <FiCamera className="me-2" />
+                  Scan QR
+                </Nav.Link>
               </>
             )}
-          </ul>
-          <button className="btn btn-outline-light" onClick={logout}>Logout</button>
-        </div>
-      </div>
-    </nav>
+          </Nav>
+          
+          <div className="d-flex align-items-center">
+            <span className="text-light me-3 d-none d-md-block" style={{ opacity: 0.7, fontSize: '0.875rem' }}>
+              {user.name}
+            </span>
+            <Button 
+              variant="outline-light" 
+              size="sm" 
+              onClick={logout}
+              className="d-flex align-items-center"
+            >
+              <FiLogOut className="me-2" />
+              Logout
+            </Button>
+          </div>
+        </Navbar.Collapse>
+      </Container>
+    </Navbar>
   )
 }
