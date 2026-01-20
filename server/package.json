@@ -1,16 +1,18 @@
 {
   "name": "server",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "dev": "nodemon server.js",
+    "dev": "nodemon --env-file=.env.development server.js",
+    "dev:local": "nodemon --env-file=.env.development server.js",
+    "dev:prod": "nodemon --env-file=.env server.js",
     "start": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "Elevator Maintenance API Server",
   "dependencies": {
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",

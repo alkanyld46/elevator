@@ -1,13 +1,30 @@
 // server/server.js
-require('dotenv').config();
+
+// Load environment variables based on NODE_ENV
+const path = require('path');
+const envFile = process.env.NODE_ENV === 'production' 
+    ? '.env' 
+    : '.env.development';
+
+require('dotenv').config({ path: path.join(__dirname, envFile) });
+
+// Fallback to .env if specific env file doesn't exist
+if (!process.env.MONGO_URI) {
+    require('dotenv').config();
+}
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const path = require('path');
 const connectDB = require('./config/db');
 
 const app = express();
+
+// Log current environment
+console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+console.log(`Loading config from: ${envFile}`);
+
 connectDB();
 
 // Security: Add Helmet for HTTP security headers

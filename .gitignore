@@ -26,9 +26,15 @@ storybook-static/
 # Env & secrets
 # --------------------
 .env
-.env.*
+.env.local
+.env.*.local
+
+# Allow these environment template files to be committed
 !.env.example
 !.env.sample
+!.env.development
+!.env.production
+!.env.production.example
 
 # dotenvx cache
 .dotenvx
