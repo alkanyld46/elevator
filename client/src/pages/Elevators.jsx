@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Container, Card, Form, Button, Table, Badge, InputGroup, Row, Col, Modal } from 'react-bootstrap'
-import { FiArrowLeft, FiPlus, FiEdit2, FiTrash2, FiSearch, FiChevronLeft, FiChevronRight, FiCalendar, FiX } from 'react-icons/fi'
+import { Container, Card, Form, Button, Table, Badge, InputGroup, Modal, Alert } from 'react-bootstrap'
+import { FiArrowLeft, FiPlus, FiEdit2, FiTrash2, FiSearch, FiChevronLeft, FiChevronRight, FiCalendar, FiX, FiRefreshCw } from 'react-icons/fi'
 import api from '../utils/api'
 
 export default function Elevators() {
@@ -16,44 +16,35 @@ export default function Elevators() {
   const [page, setPage] = useState(1)
   const [showForm, setShowForm] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
+  const [formError, setFormError] = useState('')
   const navigate = useNavigate()
   const perPage = 8
 
-  const fetchList = async () => {
+  const fetchList = useCallback(async () => {
     try {
+      setError('')
+      setLoading(true)
       const res = await api.get('/elevators')
       setList(res.data)
+    } catch (err) {
+      console.error('Fetch elevators error:', err)
+      setError(err.response?.data?.msg || 'Failed to load elevators. Please try again.')
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     fetchList()
-  }, [])
+  }, [fetchList])
 
   useEffect(() => {
     setPage(1)
   }, [search, list])
 
-  const submit = async e => {
-    e.preventDefault()
-    const payload = {
-      name,
-      location,
-      qrCodeData,
-      maintenanceSchedules: schedules.filter(s => s.date),
-    }
-    if (editId) {
-      await api.put(`/elevators/${editId}`, payload)
-    } else {
-      await api.post('/elevators', payload)
-    }
-    cancelEdit()
-    fetchList()
-  }
-
-  const cancelEdit = () => {
+  const cancelEdit = useCallback(() => {
     setEditId(null)
     setName('')
     setLocation('')
@@ -61,9 +52,38 @@ export default function Elevators() {
     setSchedules([{ date: '' }])
     setSelectedId('')
     setShowForm(false)
-  }
+    setFormError('')
+  }, [])
 
-  const startEdit = (el) => {
+  const submit = useCallback(async (e) => {
+    e.preventDefault()
+    setFormError('')
+    setSubmitting(true)
+
+    const payload = {
+      name,
+      location,
+      qrCodeData,
+      maintenanceSchedules: schedules.filter(s => s.date),
+    }
+
+    try {
+      if (editId) {
+        await api.put(`/elevators/${editId}`, payload)
+      } else {
+        await api.post('/elevators', payload)
+      }
+      cancelEdit()
+      fetchList()
+    } catch (err) {
+      console.error('Submit elevator error:', err)
+      setFormError(err.response?.data?.msg || 'Failed to save elevator. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
+  }, [name, location, qrCodeData, schedules, editId, cancelEdit, fetchList])
+
+  const startEdit = useCallback((el) => {
     setEditId(el._id)
     setName(el.name)
     setLocation(el.location)
@@ -71,29 +91,69 @@ export default function Elevators() {
     setSchedules(
       (el.maintenanceSchedules || []).map(s => ({ date: s.date.slice(0, 7) }))
     )
+    setFormError('')
     setShowForm(true)
-  }
+  }, [])
 
-  const handleDelete = async (id) => {
+  const handleDelete = useCallback(async (id) => {
     if (!window.confirm('Are you sure you want to delete this elevator?')) return
-    await api.delete(`/elevators/${id}`)
-    cancelEdit()
-    fetchList()
-  }
+    try {
+      await api.delete(`/elevators/${id}`)
+      cancelEdit()
+      fetchList()
+    } catch (err) {
+      console.error('Delete elevator error:', err)
+      setError(err.response?.data?.msg || 'Failed to delete elevator.')
+    }
+  }, [cancelEdit, fetchList])
 
-  const filtered = list.filter(el =>
-    el.name.toLowerCase().includes(search.toLowerCase()) ||
-    el.location.toLowerCase().includes(search.toLowerCase())
-  )
-  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage))
-  const start = (page - 1) * perPage
-  const paged = filtered.slice(start, start + perPage)
+  const handleAddSchedule = useCallback(() => {
+    setSchedules(prev => [...prev, { date: '' }])
+  }, [])
+
+  const handleRemoveSchedule = useCallback((idx) => {
+    setSchedules(prev => prev.filter((_, i) => i !== idx))
+  }, [])
+
+  const handleScheduleChange = useCallback((idx, value) => {
+    setSchedules(prev => {
+      const arr = [...prev]
+      arr[idx].date = value
+      return arr
+    })
+  }, [])
+
+  // Memoized filtered and paginated data
+  const { filtered, totalPages, paged } = useMemo(() => {
+    const filtered = list.filter(el =>
+      el.name.toLowerCase().includes(search.toLowerCase()) ||
+      el.location.toLowerCase().includes(search.toLowerCase())
+    )
+    const totalPages = Math.max(1, Math.ceil(filtered.length / perPage))
+    const start = (page - 1) * perPage
+    const paged = filtered.slice(start, start + perPage)
+    return { filtered, totalPages, paged }
+  }, [list, search, page])
 
   if (loading) {
     return (
       <div className="loading-container">
         <div className="spinner-modern" />
       </div>
+    )
+  }
+
+  if (error && list.length === 0) {
+    return (
+      <Container className="py-4">
+        <Alert variant="danger" className="d-flex align-items-center justify-content-between">
+          <span>{error}</span>
+          <Button variant="outline-danger" size="sm" onClick={fetchList}>
+            <FiRefreshCw className="me-2" />
+            Retry
+          </Button>
+        </Alert>
+      </Container>
     )
   }
 
@@ -106,6 +166,7 @@ export default function Elevators() {
             variant="link"
             className="p-0 me-3 text-muted"
             onClick={() => navigate('/admin')}
+            aria-label="Back to dashboard"
           >
             <FiArrowLeft size={24} />
           </Button>
@@ -122,6 +183,12 @@ export default function Elevators() {
           Add Elevator
         </Button>
       </div>
+
+      {error && (
+        <Alert variant="danger" dismissible onClose={() => setError('')} className="mb-4">
+          {error}
+        </Alert>
+      )}
 
       {/* Search */}
       <Card className="card-modern mb-4">
@@ -171,6 +238,7 @@ export default function Elevators() {
                         name="selectedElevator"
                         checked={selectedId === el._id}
                         onChange={() => setSelectedId(el._id)}
+                        aria-label={`Select ${el.name}`}
                       />
                     </td>
                     <td className="fw-semibold">{el.name}</td>
@@ -197,7 +265,7 @@ export default function Elevators() {
                         size="sm"
                         className="p-1 text-primary"
                         onClick={() => startEdit(el)}
-                        title="Edit"
+                        aria-label={`Edit ${el.name}`}
                       >
                         <FiEdit2 size={16} />
                       </Button>
@@ -206,7 +274,7 @@ export default function Elevators() {
                         size="sm"
                         className="p-1 text-danger"
                         onClick={() => handleDelete(el._id)}
-                        title="Delete"
+                        aria-label={`Delete ${el.name}`}
                       >
                         <FiTrash2 size={16} />
                       </Button>
@@ -253,6 +321,12 @@ export default function Elevators() {
         </Modal.Header>
         <Form onSubmit={submit}>
           <Modal.Body>
+            {formError && (
+              <Alert variant="danger" dismissible onClose={() => setFormError('')} className="mb-3">
+                {formError}
+              </Alert>
+            )}
+
             <Form.Group className="mb-3">
               <Form.Label className="fw-semibold">Elevator Name</Form.Label>
               <Form.Control
@@ -297,17 +371,14 @@ export default function Elevators() {
                     type="month"
                     className="form-control-modern"
                     value={s.date}
-                    onChange={e => {
-                      const arr = [...schedules]
-                      arr[idx].date = e.target.value
-                      setSchedules(arr)
-                    }}
+                    onChange={e => handleScheduleChange(idx, e.target.value)}
                     required
                   />
                   <Button
                     variant="outline-danger"
-                    onClick={() => setSchedules(schedules.filter((_, i) => i !== idx))}
+                    onClick={() => handleRemoveSchedule(idx)}
                     disabled={schedules.length === 1}
+                    aria-label="Remove schedule"
                   >
                     <FiX />
                   </Button>
@@ -316,7 +387,7 @@ export default function Elevators() {
               <Button
                 variant="outline-secondary"
                 size="sm"
-                onClick={() => setSchedules([...schedules, { date: '' }])}
+                onClick={handleAddSchedule}
               >
                 <FiPlus className="me-1" />
                 Add Schedule
@@ -324,11 +395,11 @@ export default function Elevators() {
             </Form.Group>
           </Modal.Body>
           <Modal.Footer>
-            <Button variant="secondary" onClick={cancelEdit}>
+            <Button variant="secondary" onClick={cancelEdit} disabled={submitting}>
               Cancel
             </Button>
-            <Button type="submit" className="btn-gradient-primary">
-              {editId ? 'Update Elevator' : 'Add Elevator'}
+            <Button type="submit" className="btn-gradient-primary" disabled={submitting}>
+              {submitting ? 'Saving...' : (editId ? 'Update Elevator' : 'Add Elevator')}
             </Button>
           </Modal.Footer>
         </Form>

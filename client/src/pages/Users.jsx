@@ -1,39 +1,55 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Container, Card, Table, Button, Modal, Badge, Spinner } from 'react-bootstrap'
-import { FiArrowLeft, FiUser, FiMail, FiPhone, FiTrash2, FiInfo, FiShield } from 'react-icons/fi'
+import { Container, Card, Table, Button, Modal, Badge, Spinner, Alert } from 'react-bootstrap'
+import { FiArrowLeft, FiUser, FiMail, FiPhone, FiTrash2, FiInfo, FiShield, FiRefreshCw } from 'react-icons/fi'
 import api from '../utils/api'
 
 export default function Users() {
   const [list, setList] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [selectedUser, setSelectedUser] = useState(null)
   const [deleting, setDeleting] = useState(null)
   const navigate = useNavigate()
 
-  const fetchList = async () => {
+  const fetchList = useCallback(async () => {
     try {
+      setError('')
+      setLoading(true)
       const res = await api.get('/users')
       setList(res.data)
+    } catch (err) {
+      console.error('Fetch users error:', err)
+      setError(err.response?.data?.msg || 'Failed to load users. Please try again.')
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     fetchList()
-  }, [])
+  }, [fetchList])
 
-  const remove = async id => {
+  const remove = useCallback(async (id) => {
     if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) return
     setDeleting(id)
     try {
       await api.delete(`/users/${id}`)
+      setSelectedUser(null)
       fetchList()
+    } catch (err) {
+      console.error('Delete user error:', err)
+      setError(err.response?.data?.msg || 'Failed to delete user.')
     } finally {
       setDeleting(null)
     }
-  }
+  }, [fetchList])
+
+  // Memoized user lists
+  const { admins, techs } = useMemo(() => ({
+    admins: list.filter(u => u.role === 'admin'),
+    techs: list.filter(u => u.role === 'tech')
+  }), [list])
 
   if (loading) {
     return (
@@ -43,8 +59,19 @@ export default function Users() {
     )
   }
 
-  const admins = list.filter(u => u.role === 'admin')
-  const techs = list.filter(u => u.role === 'tech')
+  if (error && list.length === 0) {
+    return (
+      <Container className="py-4">
+        <Alert variant="danger" className="d-flex align-items-center justify-content-between">
+          <span>{error}</span>
+          <Button variant="outline-danger" size="sm" onClick={fetchList}>
+            <FiRefreshCw className="me-2" />
+            Retry
+          </Button>
+        </Alert>
+      </Container>
+    )
+  }
 
   return (
     <Container className="py-4 fade-in">
@@ -54,6 +81,7 @@ export default function Users() {
           variant="link"
           className="p-0 me-3 text-muted"
           onClick={() => navigate('/admin')}
+          aria-label="Back to dashboard"
         >
           <FiArrowLeft size={24} />
         </Button>
@@ -62,6 +90,12 @@ export default function Users() {
           <p className="page-subtitle mb-0">{list.length} users registered</p>
         </div>
       </div>
+
+      {error && (
+        <Alert variant="danger" dismissible onClose={() => setError('')} className="mb-4">
+          {error}
+        </Alert>
+      )}
 
       {/* Stats */}
       <div className="row g-3 mb-4">
@@ -145,7 +179,7 @@ export default function Users() {
                         size="sm"
                         className="p-1 text-primary"
                         onClick={() => setSelectedUser(u)}
-                        title="View Details"
+                        aria-label={`View details for ${u.name}`}
                       >
                         <FiInfo size={16} />
                       </Button>
@@ -155,7 +189,7 @@ export default function Users() {
                         className="p-1 text-danger"
                         onClick={() => remove(u._id)}
                         disabled={deleting === u._id}
-                        title="Delete"
+                        aria-label={`Delete ${u.name}`}
                       >
                         {deleting === u._id ? (
                           <Spinner animation="border" size="sm" />
@@ -234,12 +268,14 @@ export default function Users() {
           </Button>
           <Button 
             variant="danger" 
-            onClick={() => {
-              remove(selectedUser._id)
-              setSelectedUser(null)
-            }}
+            onClick={() => remove(selectedUser._id)}
+            disabled={deleting === selectedUser?._id}
           >
-            <FiTrash2 className="me-2" />
+            {deleting === selectedUser?._id ? (
+              <Spinner animation="border" size="sm" className="me-2" />
+            ) : (
+              <FiTrash2 className="me-2" />
+            )}
             Delete User
           </Button>
         </Modal.Footer>

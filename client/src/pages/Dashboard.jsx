@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Container, Row, Col, Card, Table, Badge, Button, Modal, Form, Spinner } from 'react-bootstrap'
-import { FiActivity, FiCheckCircle, FiClock, FiUsers, FiSettings, FiUserPlus, FiX, FiDownload, FiAlertTriangle } from 'react-icons/fi'
+import { Container, Row, Col, Card, Table, Badge, Button, Modal, Form, Alert } from 'react-bootstrap'
+import { FiActivity, FiCheckCircle, FiClock, FiUsers, FiSettings, FiUserPlus, FiDownload, FiAlertTriangle, FiRefreshCw } from 'react-icons/fi'
 import api from '../utils/api'
 import { format } from 'date-fns'
 
@@ -12,77 +12,116 @@ export default function Dashboard() {
   const [selected, setSelected] = useState(null)
   const [attachments, setAttachments] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [attachmentError, setAttachmentError] = useState('')
   const navigate = useNavigate()
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const month = new Date().toISOString().slice(0, 7)
-        const [elevRes, recRes] = await Promise.all([
-          api.get('/elevators/current'),
-          api.get(`/records?month=${month}`)
-        ])
-        setElevators(elevRes.data)
-        setRecords(recRes.data)
-      } catch (err) {
-        // Handle error silently
-      } finally {
-        setLoading(false)
-      }
+  const fetchData = useCallback(async () => {
+    try {
+      setError('')
+      setLoading(true)
+      const month = new Date().toISOString().slice(0, 7)
+      const [elevRes, recRes] = await Promise.all([
+        api.get('/elevators/current'),
+        api.get(`/records?month=${month}`)
+      ])
+      setElevators(elevRes.data)
+      setRecords(recRes.data)
+    } catch (err) {
+      console.error('Dashboard fetch error:', err)
+      setError(err.response?.data?.msg || 'Failed to load dashboard data. Please try again.')
+    } finally {
+      setLoading(false)
     }
-    fetchData()
   }, [])
 
   useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
+  useEffect(() => {
     if (!selected) return
-    api.get(`/records?elevator=${selected._id}`).then(res => {
-      const arr = []
-      res.data.forEach(r => {
-        (r.attachments || []).forEach(a => {
-          if (!a) return
-          if (typeof a === 'string') {
-            arr.push({ file: a, description: '' })
-          } else if (a.file || a.filename) {
-            arr.push({
-              file: a.file || a.filename,
-              description: a.description || ''
-            })
-          }
+    setAttachmentError('')
+    api.get(`/records?elevator=${selected._id}`)
+      .then(res => {
+        const arr = []
+        res.data.forEach(r => {
+          (r.attachments || []).forEach(a => {
+            if (!a) return
+            if (typeof a === 'string') {
+              arr.push({ file: a, description: '' })
+            } else if (a.file || a.filename) {
+              arr.push({
+                file: a.file || a.filename,
+                description: a.description || ''
+              })
+            }
+          })
         })
+        setAttachments(arr)
       })
-      setAttachments(arr)
-    })
+      .catch(err => {
+        console.error('Attachment fetch error:', err)
+        setAttachmentError('Failed to load attachments')
+      })
   }, [selected])
 
-  const total = elevators.length
-  const doneElevatorIds = new Set(records.map(r => r.elevator?._id || r.elevator))
-  const done = doneElevatorIds.size
-  const pending = total - done
-  const maintainedList = elevators.filter(el => doneElevatorIds.has(el._id))
-  const pendingList = elevators.filter(el => !doneElevatorIds.has(el._id))
+  // Memoized computed values for performance
+  const { total, done, pending, maintainedList, pendingList, recordMap, byTech } = useMemo(() => {
+    const doneElevatorIds = new Set(records.map(r => r.elevator?._id || r.elevator))
+    const total = elevators.length
+    const done = doneElevatorIds.size
+    const pending = total - done
+    const maintainedList = elevators.filter(el => doneElevatorIds.has(el._id))
+    const pendingList = elevators.filter(el => !doneElevatorIds.has(el._id))
 
-  const recordMap = {}
-  records.forEach(r => {
-    const id = r.elevator?._id || r.elevator
-    if (!id) return
-    if (!recordMap[id] || new Date(r.timestamp) > new Date(recordMap[id].timestamp)) {
-      recordMap[id] = r
-    }
-  })
+    // Build record map
+    const recordMap = {}
+    records.forEach(r => {
+      const id = r.elevator?._id || r.elevator
+      if (!id) return
+      if (!recordMap[id] || new Date(r.timestamp) > new Date(recordMap[id].timestamp)) {
+        recordMap[id] = r
+      }
+    })
 
-  const byTech = {}
-  records.forEach(r => {
-    const id = r.user?._id || 'unknown'
-    const name = r.user?.name || 'Unknown'
-    if (!byTech[id]) byTech[id] = { name, list: [] }
-    byTech[id].list.push(r)
-  })
+    // Build by technician map
+    const byTech = {}
+    records.forEach(r => {
+      const id = r.user?._id || 'unknown'
+      const name = r.user?.name || 'Unknown'
+      if (!byTech[id]) byTech[id] = { name, list: [] }
+      byTech[id].list.push(r)
+    })
+
+    return { total, done, pending, maintainedList, pendingList, recordMap, byTech }
+  }, [elevators, records])
+
+  const handleCloseModal = useCallback(() => {
+    setSelected(null)
+    setAttachments([])
+    setAttachmentError('')
+  }, [])
 
   if (loading) {
     return (
       <div className="loading-container">
         <div className="spinner-modern" />
       </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <Container className="py-4">
+        <Alert variant="danger" className="d-flex align-items-center justify-content-between">
+          <span>{error}</span>
+          <Button variant="outline-danger" size="sm" onClick={fetchData}>
+            <FiRefreshCw className="me-2" />
+            Retry
+          </Button>
+        </Alert>
+      </Container>
     )
   }
 
@@ -322,7 +361,7 @@ export default function Dashboard() {
       {/* Details Modal */}
       <Modal 
         show={!!selected} 
-        onHide={() => { setSelected(null); setAttachments([]) }}
+        onHide={handleCloseModal}
         centered
         className="modal-modern"
       >
@@ -340,6 +379,10 @@ export default function Dashboard() {
             <strong>Assigned Month:</strong> <span className="text-muted">{selected?.assignedMonth && new Date(selected.assignedMonth).toLocaleDateString()}</span>
           </div>
           
+          {attachmentError && (
+            <Alert variant="warning" className="mb-3">{attachmentError}</Alert>
+          )}
+
           {attachments.length > 0 && (
             <>
               <hr />
@@ -353,7 +396,7 @@ export default function Dashboard() {
                 </thead>
                 <tbody>
                   {attachments.map((a, i) => (
-                    <tr key={i}>
+                    <tr key={a.file || i}>
                       <td>{a.description || <span className="text-muted">No description</span>}</td>
                       <td>
                         {a.file ? (
@@ -379,7 +422,7 @@ export default function Dashboard() {
           )}
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => { setSelected(null); setAttachments([]) }}>
+          <Button variant="secondary" onClick={handleCloseModal}>
             Close
           </Button>
         </Modal.Footer>

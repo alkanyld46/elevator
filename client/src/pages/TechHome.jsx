@@ -1,49 +1,54 @@
-import React, { useEffect, useState, useMemo } from 'react'
+import React, { useEffect, useState, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Container, Row, Col, Card, ListGroup, Button, Badge, Spinner } from 'react-bootstrap'
-import { FiCamera, FiCheckCircle, FiClock, FiMapPin } from 'react-icons/fi'
+import { Container, Row, Col, Card, ListGroup, Button, Badge, Alert } from 'react-bootstrap'
+import { FiCamera, FiCheckCircle, FiClock, FiMapPin, FiRefreshCw } from 'react-icons/fi'
 import api from '../utils/api'
-import { getStoredUser } from '../utils/storage'
+import { useAuth } from '../auth'
 
 export default function TechHome() {
   const navigate = useNavigate()
-  const user = getStoredUser() || {}
+  const { user } = useAuth()
 
-  const [all, setAll] = useState([])
   const [due, setDue] = useState([])
   const [records, setRecords] = useState([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState(null)
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const month = new Date().toISOString().slice(0, 7)
-        const [allRes, dueRes, recRes] = await Promise.all([
-          api.get('/elevators'),
-          api.get('/elevators/current'),
-          api.get(`/records?month=${month}`)
-        ])
-        setAll(allRes.data || [])
-        setDue(dueRes.data || [])
-        setRecords(recRes.data || [])
-      } catch (e) {
-        setErr('Failed to load elevators')
-      } finally {
-        setLoading(false)
-      }
-    })()
+  const fetchData = useCallback(async () => {
+    try {
+      setErr(null)
+      setLoading(true)
+      const month = new Date().toISOString().slice(0, 7)
+      const [dueRes, recRes] = await Promise.all([
+        api.get('/elevators/current'),
+        api.get(`/records?month=${month}`)
+      ])
+      setDue(dueRes.data || [])
+      setRecords(recRes.data || [])
+    } catch (e) {
+      console.error('TechHome fetch error:', e)
+      setErr(e.response?.data?.msg || 'Failed to load elevators. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
-  const unmaintained = useMemo(() => {
-    const maintainedIds = new Set(records.map(r => r.elevator?._id || r.elevator))
-    return due.filter(el => !maintainedIds.has(el._id))
-  }, [due, records])
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
-  const maintained = useMemo(() => {
-    const maintainedIds = new Set(records.map(r => r.elevator?._id || r.elevator))
-    return due.filter(el => maintainedIds.has(el._id))
-  }, [due, records])
+  // Single computation of maintainedIds to avoid duplication
+  const maintainedIds = useMemo(() => 
+    new Set(records.map(r => r.elevator?._id || r.elevator))
+  , [records])
+
+  const unmaintained = useMemo(() => 
+    due.filter(el => !maintainedIds.has(el._id))
+  , [due, maintainedIds])
+
+  const maintained = useMemo(() => 
+    due.filter(el => maintainedIds.has(el._id))
+  , [due, maintainedIds])
 
   if (loading) {
     return (
@@ -70,14 +75,18 @@ export default function TechHome() {
         }}>
           <span style={{ fontSize: '2rem' }}>👋</span>
         </div>
-        <h1 className="page-title">Welcome, {user.name || 'Technician'}!</h1>
+        <h1 className="page-title">Welcome, {user?.name || 'Technician'}!</h1>
         <p className="page-subtitle">Here's your maintenance overview for this month</p>
       </div>
 
       {err && (
-        <div className="alert alert-modern alert-danger text-center mb-4">
-          {err}
-        </div>
+        <Alert variant="danger" className="d-flex align-items-center justify-content-between mb-4">
+          <span>{err}</span>
+          <Button variant="outline-danger" size="sm" onClick={fetchData}>
+            <FiRefreshCw className="me-2" />
+            Retry
+          </Button>
+        </Alert>
       )}
 
       {/* Stats Row */}
