@@ -2,7 +2,9 @@ import React, { useEffect, useState, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Container, Card, Form, Button, Table, Badge, InputGroup, Modal, Alert } from 'react-bootstrap'
 import { FiArrowLeft, FiPlus, FiEdit2, FiTrash2, FiSearch, FiChevronLeft, FiChevronRight, FiCalendar, FiX, FiRefreshCw } from 'react-icons/fi'
+import { HiQrCode } from 'react-icons/hi2'
 import api from '../utils/api'
+import ElevatorQRModal from '../components/ElevatorQRModal'
 
 export default function Elevators() {
   const [list, setList] = useState([])
@@ -15,6 +17,8 @@ export default function Elevators() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [showForm, setShowForm] = useState(false)
+  const [showQRModal, setShowQRModal] = useState(false)
+  const [qrElevator, setQrElevator] = useState(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -63,8 +67,12 @@ export default function Elevators() {
     const payload = {
       name,
       location,
-      qrCodeData,
       maintenanceSchedules: schedules.filter(s => s.date),
+    }
+
+    // Only include qrCodeData if provided (for editing or custom codes)
+    if (qrCodeData) {
+      payload.qrCodeData = qrCodeData
     }
 
     try {
@@ -121,6 +129,25 @@ export default function Elevators() {
       arr[idx].date = value
       return arr
     })
+  }, [])
+
+  const handleShowQR = useCallback((elevator) => {
+    setQrElevator(elevator)
+    setShowQRModal(true)
+  }, [])
+
+  const handleQRModalClose = useCallback(() => {
+    setShowQRModal(false)
+    setQrElevator(null)
+  }, [])
+
+  const handleElevatorUpdate = useCallback((updatedElevator) => {
+    // Update the elevator in the list
+    setList(prev => prev.map(el => 
+      el._id === updatedElevator._id ? updatedElevator : el
+    ))
+    // Update the QR modal elevator
+    setQrElevator(updatedElevator)
   }, [])
 
   // Memoized filtered and paginated data
@@ -219,7 +246,7 @@ export default function Elevators() {
                 <th>Location</th>
                 <th>QR Code</th>
                 <th>Schedules</th>
-                <th style={{ width: 120 }}>Actions</th>
+                <th style={{ width: 160 }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -260,6 +287,16 @@ export default function Elevators() {
                       )}
                     </td>
                     <td>
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="p-1 text-success"
+                        onClick={() => handleShowQR(el)}
+                        aria-label={`View QR code for ${el.name}`}
+                        title="View QR Code"
+                      >
+                        <HiQrCode size={18} />
+                      </Button>
                       <Button
                         variant="link"
                         size="sm"
@@ -353,13 +390,12 @@ export default function Elevators() {
               <Form.Label className="fw-semibold">QR Code Data</Form.Label>
               <Form.Control
                 className="form-control-modern"
-                placeholder="Unique identifier for QR code"
+                placeholder="Auto-generated if left empty"
                 value={qrCodeData}
                 onChange={e => setQrCodeData(e.target.value)}
-                required
               />
               <Form.Text className="text-muted">
-                This should match the data encoded in the physical QR code
+                Leave empty to auto-generate. The QR code can be downloaded after saving.
               </Form.Text>
             </Form.Group>
 
@@ -404,6 +440,14 @@ export default function Elevators() {
           </Modal.Footer>
         </Form>
       </Modal>
+
+      {/* QR Code Modal */}
+      <ElevatorQRModal
+        show={showQRModal}
+        onHide={handleQRModalClose}
+        elevator={qrElevator}
+        onElevatorUpdate={handleElevatorUpdate}
+      />
     </Container>
   )
 }

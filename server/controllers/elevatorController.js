@@ -40,9 +40,14 @@ exports.create = async (req, res) => {
         // Only allow specific fields (prevents mass assignment)
         const data = pickAllowedFields(req.body)
         
-        // Validate required fields
-        if (!data.name || !data.location || !data.qrCodeData) {
-            return res.status(400).json({ msg: 'Name, location, and qrCodeData are required' })
+        // Validate required fields (qrCodeData is now auto-generated if not provided)
+        if (!data.name || !data.location) {
+            return res.status(400).json({ msg: 'Name and location are required' })
+        }
+
+        // Auto-generate qrCodeData if not provided
+        if (!data.qrCodeData) {
+            data.qrCodeData = Elevator.generateQrCodeData()
         }
 
         const elevator = await Elevator.create(data)
@@ -116,6 +121,26 @@ exports.getCurrent = async (req, res) => {
         res.json(due)
     } catch (err) {
         console.error('GetCurrent Elevators Error:', err)
+        res.status(500).json({ msg: 'Server error', error: err.message })
+    }
+}
+
+// @route POST /api/elevators/:id/regenerate-qr
+// Regenerates the QR code data for an elevator
+exports.regenerateQrCode = async (req, res) => {
+    try {
+        const elevator = await Elevator.findById(req.params.id)
+        if (!elevator) {
+            return res.status(404).json({ msg: 'Elevator not found' })
+        }
+
+        // Generate new QR code data
+        elevator.qrCodeData = Elevator.generateQrCodeData()
+        await elevator.save()
+
+        res.json(elevator)
+    } catch (err) {
+        console.error('Regenerate QR Error:', err)
         res.status(500).json({ msg: 'Server error', error: err.message })
     }
 }
