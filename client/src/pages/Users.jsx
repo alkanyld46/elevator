@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Container, Card, Table, Button, Modal, Badge, Spinner, Alert } from 'react-bootstrap'
 import { FiArrowLeft, FiUser, FiMail, FiPhone, FiTrash2, FiInfo, FiShield, FiRefreshCw } from 'react-icons/fi'
 import api from '../utils/api'
+import Pagination, { usePagination } from '../components/Pagination'
 
 export default function Users() {
   const [list, setList] = useState([])
@@ -11,6 +12,9 @@ export default function Users() {
   const [selectedUser, setSelectedUser] = useState(null)
   const [deleting, setDeleting] = useState(null)
   const navigate = useNavigate()
+
+  // Pagination
+  const pagination = usePagination(5)
 
   const fetchList = useCallback(async () => {
     try {
@@ -29,6 +33,11 @@ export default function Users() {
   useEffect(() => {
     fetchList()
   }, [fetchList])
+
+  // Reset pagination when list changes
+  useEffect(() => {
+    pagination.resetPage()
+  }, [list.length])
 
   const remove = useCallback(async (id) => {
     if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) return
@@ -50,6 +59,9 @@ export default function Users() {
     admins: list.filter(u => u.role === 'admin'),
     techs: list.filter(u => u.role === 'tech')
   }), [list])
+
+  // Paginated list
+  const pagedList = pagination.paginate(list)
 
   if (loading) {
     return (
@@ -133,14 +145,14 @@ export default function Users() {
               </tr>
             </thead>
             <tbody>
-              {list.length === 0 ? (
+              {pagedList.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="text-center py-5 text-muted">
                     No users found
                   </td>
                 </tr>
               ) : (
-                list.map(u => (
+                pagedList.map(u => (
                   <tr key={u._id}>
                     <td>
                       <div className="d-flex align-items-center">
@@ -166,8 +178,8 @@ export default function Users() {
                     <td className="text-muted">{u.phone || '-'}</td>
                     <td>
                       <Badge 
-                        className="badge-status"
-                        bg={u.role === 'admin' ? 'primary' : 'success'}
+                        bg=""
+                        className={`badge-status ${u.role === 'admin' ? 'badge-warning' : 'badge-success'}`}
                       >
                         <FiShield size={10} className="me-1" />
                         {u.role === 'admin' ? 'Admin' : 'Technician'}
@@ -204,6 +216,15 @@ export default function Users() {
             </tbody>
           </Table>
         </div>
+        {list.length > 0 && (
+          <Pagination
+            currentPage={pagination.page}
+            totalItems={list.length}
+            itemsPerPage={pagination.itemsPerPage}
+            onPageChange={pagination.setPage}
+            onItemsPerPageChange={pagination.setItemsPerPage}
+          />
+        )}
       </Card>
 
       {/* User Details Modal */}

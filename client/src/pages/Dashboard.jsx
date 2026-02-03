@@ -4,6 +4,7 @@ import { Container, Row, Col, Card, Table, Badge, Button, Modal, Form, Alert } f
 import { FiActivity, FiCheckCircle, FiClock, FiUsers, FiSettings, FiUserPlus, FiDownload, FiAlertTriangle, FiRefreshCw } from 'react-icons/fi'
 import api from '../utils/api'
 import { format } from 'date-fns'
+import Pagination, { usePagination } from '../components/Pagination'
 
 export default function Dashboard() {
   const [elevators, setElevators] = useState([])
@@ -15,6 +16,11 @@ export default function Dashboard() {
   const [error, setError] = useState('')
   const [attachmentError, setAttachmentError] = useState('')
   const navigate = useNavigate()
+
+  // Pagination for each section
+  const maintainedPagination = usePagination(5)
+  const pendingPagination = usePagination(5)
+  const techRecordsPagination = usePagination(5)
 
   const fetchData = useCallback(async () => {
     try {
@@ -96,6 +102,25 @@ export default function Dashboard() {
 
     return { total, done, pending, maintainedList, pendingList, recordMap, byTech }
   }, [elevators, records])
+
+  // Reset pagination when data changes
+  useEffect(() => {
+    maintainedPagination.resetPage()
+  }, [maintainedList.length])
+
+  useEffect(() => {
+    pendingPagination.resetPage()
+  }, [pendingList.length])
+
+  useEffect(() => {
+    techRecordsPagination.resetPage()
+  }, [selectedTech])
+
+  // Paginated lists
+  const pagedMaintained = maintainedPagination.paginate(maintainedList)
+  const pagedPending = pendingPagination.paginate(pendingList)
+  const techRecords = selectedTech && byTech[selectedTech] ? byTech[selectedTech].list : []
+  const pagedTechRecords = techRecordsPagination.paginate(techRecords)
 
   const handleCloseModal = useCallback(() => {
     setSelected(null)
@@ -203,7 +228,7 @@ export default function Dashboard() {
           <div className="d-flex align-items-center">
             <FiCheckCircle className="text-success me-2" size={20} />
             <h5 className="mb-0 fw-bold">Maintained Elevators</h5>
-            <Badge bg="success" className="ms-2">{maintainedList.length}</Badge>
+            <Badge bg="" className="badge-status badge-success ms-2">{maintainedList.length}</Badge>
           </div>
         </Card.Header>
         <Card.Body className="p-0">
@@ -214,50 +239,59 @@ export default function Dashboard() {
               <p className="text-muted">Completed maintenance will appear here</p>
             </div>
           ) : (
-            <div className="table-responsive">
-              <Table className="table-modern mb-0">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Location</th>
-                    <th>Assigned</th>
-                    <th>Maintained At</th>
-                    <th>Technician</th>
-                    <th>Status</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {maintainedList.map(el => (
-                    <tr key={el._id}>
-                      <td className="fw-semibold">{el.name}</td>
-                      <td className="text-muted">{el.location}</td>
-                      <td>{new Date(el.assignedMonth).toLocaleDateString()}</td>
-                      <td>{recordMap[el._id] ? format(new Date(recordMap[el._id].timestamp), 'PPp') : ''}</td>
-                      <td>{recordMap[el._id]?.user?.name || 'Unknown'}</td>
-                      <td>
-                        {recordMap[el._id]?.needsRepair ? (
-                          <Badge className="badge-status badge-danger">
-                            <FiAlertTriangle className="me-1" />
-                            Needs Repair
-                          </Badge>
-                        ) : (
-                          <Badge className="badge-status badge-success">
-                            <FiCheckCircle className="me-1" />
-                            OK
-                          </Badge>
-                        )}
-                      </td>
-                      <td>
-                        <Button variant="link" size="sm" onClick={() => setSelected(el)}>
-                          Details
-                        </Button>
-                      </td>
+            <>
+              <div className="table-responsive">
+                <Table className="table-modern mb-0">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Location</th>
+                      <th>Assigned</th>
+                      <th>Maintained At</th>
+                      <th>Technician</th>
+                      <th>Status</th>
+                      <th></th>
                     </tr>
-                  ))}
-                </tbody>
-              </Table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {pagedMaintained.map(el => (
+                      <tr key={el._id}>
+                        <td className="fw-semibold">{el.name}</td>
+                        <td className="text-muted">{el.location}</td>
+                        <td>{new Date(el.assignedMonth).toLocaleDateString()}</td>
+                        <td>{recordMap[el._id] ? format(new Date(recordMap[el._id].timestamp), 'PPp') : ''}</td>
+                        <td>{recordMap[el._id]?.user?.name || 'Unknown'}</td>
+                        <td>
+                          {recordMap[el._id]?.needsRepair ? (
+                            <Badge bg="" className="badge-status badge-danger">
+                              <FiAlertTriangle className="me-1" />
+                              Needs Repair
+                            </Badge>
+                          ) : (
+                            <Badge bg="" className="badge-status badge-grey">
+                              <FiCheckCircle className="me-1" />
+                              OK
+                            </Badge>
+                          )}
+                        </td>
+                        <td>
+                          <Button variant="link" size="sm" onClick={() => setSelected(el)}>
+                            Details
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </div>
+              <Pagination
+                currentPage={maintainedPagination.page}
+                totalItems={maintainedList.length}
+                itemsPerPage={maintainedPagination.itemsPerPage}
+                onPageChange={maintainedPagination.setPage}
+                onItemsPerPageChange={maintainedPagination.setItemsPerPage}
+              />
+            </>
           )}
         </Card.Body>
       </Card>
@@ -268,7 +302,7 @@ export default function Dashboard() {
           <div className="d-flex align-items-center">
             <FiClock className="text-warning me-2" size={20} />
             <h5 className="mb-0 fw-bold">Pending This Month</h5>
-            <Badge bg="warning" text="dark" className="ms-2">{pendingList.length}</Badge>
+            <Badge bg="" className="badge-status badge-warning ms-2">{pendingList.length}</Badge>
           </div>
         </Card.Header>
         <Card.Body className="p-0">
@@ -279,32 +313,41 @@ export default function Dashboard() {
               <p className="text-muted">All scheduled elevators have been maintained</p>
             </div>
           ) : (
-            <div className="table-responsive">
-              <Table className="table-modern mb-0">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Location</th>
-                    <th>Assigned Date</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pendingList.map(el => (
-                    <tr key={el._id}>
-                      <td className="fw-semibold">{el.name}</td>
-                      <td className="text-muted">{el.location}</td>
-                      <td>{new Date(el.assignedMonth).toLocaleDateString()}</td>
-                      <td>
-                        <Button variant="link" size="sm" onClick={() => setSelected(el)}>
-                          Details
-                        </Button>
-                      </td>
+            <>
+              <div className="table-responsive">
+                <Table className="table-modern mb-0">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Location</th>
+                      <th>Assigned Date</th>
+                      <th></th>
                     </tr>
-                  ))}
-                </tbody>
-              </Table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {pagedPending.map(el => (
+                      <tr key={el._id}>
+                        <td className="fw-semibold">{el.name}</td>
+                        <td className="text-muted">{el.location}</td>
+                        <td>{new Date(el.assignedMonth).toLocaleDateString()}</td>
+                        <td>
+                          <Button variant="link" size="sm" onClick={() => setSelected(el)}>
+                            Details
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </div>
+              <Pagination
+                currentPage={pendingPagination.page}
+                totalItems={pendingList.length}
+                itemsPerPage={pendingPagination.itemsPerPage}
+                onPageChange={pendingPagination.setPage}
+                onItemsPerPageChange={pendingPagination.setItemsPerPage}
+              />
+            </>
           )}
         </Card.Body>
       </Card>
@@ -339,21 +382,32 @@ export default function Dashboard() {
           ) : selectedTech === '' ? (
             <p className="text-muted text-center py-4">Please select a technician to view their work</p>
           ) : (
-            <div className="list-group list-group-modern">
-              {byTech[selectedTech]?.list.map(rec => (
-                <div key={rec._id} className="list-group-item">
-                  <div className="d-flex justify-content-between align-items-center">
-                    <div>
-                      <strong>{rec.elevator?.name}</strong>
-                      <span className="text-muted ms-2">@ {rec.elevator?.location}</span>
+            <>
+              <div className="list-group list-group-modern">
+                {pagedTechRecords.map(rec => (
+                  <div key={rec._id} className="list-group-item">
+                    <div className="d-flex justify-content-between align-items-center">
+                      <div>
+                        <strong>{rec.elevator?.name}</strong>
+                        <span className="text-muted ms-2">@ {rec.elevator?.location}</span>
+                      </div>
+                      <Badge bg="" className="badge-status badge-grey">
+                        {format(new Date(rec.timestamp), 'PP p')}
+                      </Badge>
                     </div>
-                    <Badge bg="light" text="dark">
-                      {format(new Date(rec.timestamp), 'PP p')}
-                    </Badge>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+              {techRecords.length > 0 && (
+                <Pagination
+                  currentPage={techRecordsPagination.page}
+                  totalItems={techRecords.length}
+                  itemsPerPage={techRecordsPagination.itemsPerPage}
+                  onPageChange={techRecordsPagination.setPage}
+                  onItemsPerPageChange={techRecordsPagination.setItemsPerPage}
+                />
+              )}
+            </>
           )}
         </Card.Body>
       </Card>

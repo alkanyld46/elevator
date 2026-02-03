@@ -4,6 +4,7 @@ import { Container, Row, Col, Card, ListGroup, Button, Badge, Alert } from 'reac
 import { FiCamera, FiCheckCircle, FiClock, FiMapPin, FiRefreshCw } from 'react-icons/fi'
 import api from '../utils/api'
 import { useAuth } from '../auth'
+import Pagination, { usePagination } from '../components/Pagination'
 
 export default function TechHome() {
   const navigate = useNavigate()
@@ -13,6 +14,10 @@ export default function TechHome() {
   const [records, setRecords] = useState([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState(null)
+
+  // Pagination for each list
+  const pendingPagination = usePagination(5)
+  const completedPagination = usePagination(5)
 
   const fetchData = useCallback(async () => {
     try {
@@ -49,6 +54,19 @@ export default function TechHome() {
   const maintained = useMemo(() => 
     due.filter(el => maintainedIds.has(el._id))
   , [due, maintainedIds])
+
+  // Reset pagination when data changes
+  useEffect(() => {
+    pendingPagination.resetPage()
+  }, [unmaintained.length])
+
+  useEffect(() => {
+    completedPagination.resetPage()
+  }, [maintained.length])
+
+  // Paginated lists
+  const pagedUnmaintained = pendingPagination.paginate(unmaintained)
+  const pagedMaintained = completedPagination.paginate(maintained)
 
   if (loading) {
     return (
@@ -130,7 +148,7 @@ export default function TechHome() {
           <div className="d-flex align-items-center">
             <FiClock className="text-warning me-2" size={20} />
             <h5 className="mb-0 fw-bold">Pending Maintenance</h5>
-            <Badge bg="warning" text="dark" className="ms-2">{unmaintained.length}</Badge>
+            <Badge bg="" className="badge-status badge-warning ms-2">{unmaintained.length}</Badge>
           </div>
         </Card.Header>
         <Card.Body>
@@ -141,26 +159,35 @@ export default function TechHome() {
               <p className="text-muted mb-0">No pending elevators for this month</p>
             </div>
           ) : (
-            <ListGroup className="list-group-modern">
-              {unmaintained.map(el => (
-                <ListGroup.Item 
-                  key={el._id} 
-                  className="d-flex justify-content-between align-items-center"
-                >
-                  <div>
-                    <strong>{el.name}</strong>
-                    <div className="text-muted small">
-                      <FiMapPin size={12} className="me-1" />
-                      {el.location}
+            <>
+              <ListGroup className="list-group-modern">
+                {pagedUnmaintained.map(el => (
+                  <ListGroup.Item 
+                    key={el._id} 
+                    className="d-flex justify-content-between align-items-center"
+                  >
+                    <div>
+                      <strong>{el.name}</strong>
+                      <div className="text-muted small">
+                        <FiMapPin size={12} className="me-1" />
+                        {el.location}
+                      </div>
                     </div>
-                  </div>
-                  <Badge bg="warning" text="dark" className="badge-status">
-                    <FiClock className="me-1" />
-                    Pending
-                  </Badge>
-                </ListGroup.Item>
-              ))}
-            </ListGroup>
+                    <Badge bg="" className="badge-status badge-warning">
+                      <FiClock className="me-1" />
+                      Pending
+                    </Badge>
+                  </ListGroup.Item>
+                ))}
+              </ListGroup>
+              <Pagination
+                currentPage={pendingPagination.page}
+                totalItems={unmaintained.length}
+                itemsPerPage={pendingPagination.itemsPerPage}
+                onPageChange={pendingPagination.setPage}
+                onItemsPerPageChange={pendingPagination.setItemsPerPage}
+              />
+            </>
           )}
         </Card.Body>
       </Card>
@@ -171,7 +198,7 @@ export default function TechHome() {
           <div className="d-flex align-items-center">
             <FiCheckCircle className="text-success me-2" size={20} />
             <h5 className="mb-0 fw-bold">Completed This Month</h5>
-            <Badge bg="success" className="ms-2">{maintained.length}</Badge>
+            <Badge bg="" className="badge-status badge-success ms-2">{maintained.length}</Badge>
           </div>
         </Card.Header>
         <Card.Body>
@@ -182,26 +209,35 @@ export default function TechHome() {
               <p className="text-muted mb-0">Start by scanning an elevator QR code</p>
             </div>
           ) : (
-            <ListGroup className="list-group-modern">
-              {maintained.map(el => (
-                <ListGroup.Item 
-                  key={el._id} 
-                  className="d-flex justify-content-between align-items-center"
-                >
-                  <div>
-                    <strong>{el.name}</strong>
-                    <div className="text-muted small">
-                      <FiMapPin size={12} className="me-1" />
-                      {el.location}
+            <>
+              <ListGroup className="list-group-modern">
+                {pagedMaintained.map(el => (
+                  <ListGroup.Item 
+                    key={el._id} 
+                    className="d-flex justify-content-between align-items-center"
+                  >
+                    <div>
+                      <strong>{el.name}</strong>
+                      <div className="text-muted small">
+                        <FiMapPin size={12} className="me-1" />
+                        {el.location}
+                      </div>
                     </div>
-                  </div>
-                  <Badge bg="success" className="badge-status">
-                    <FiCheckCircle className="me-1" />
-                    Done
-                  </Badge>
-                </ListGroup.Item>
-              ))}
-            </ListGroup>
+                    <Badge bg="" className="badge-status badge-success">
+                      <FiCheckCircle className="me-1" />
+                      Done
+                    </Badge>
+                  </ListGroup.Item>
+                ))}
+              </ListGroup>
+              <Pagination
+                currentPage={completedPagination.page}
+                totalItems={maintained.length}
+                itemsPerPage={completedPagination.itemsPerPage}
+                onPageChange={completedPagination.setPage}
+                onItemsPerPageChange={completedPagination.setItemsPerPage}
+              />
+            </>
           )}
         </Card.Body>
       </Card>

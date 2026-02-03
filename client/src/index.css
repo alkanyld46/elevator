@@ -245,18 +245,23 @@ code {
 }
 
 .badge-success {
-  background: rgba(56, 239, 125, 0.15);
-  color: #0d8a3d;
+  background: rgba(56, 239, 125, 0.15) !important;
+  color: #0d8a3d !important;
 }
 
 .badge-warning {
-  background: rgba(247, 183, 49, 0.15);
-  color: #a36d00;
+  background: rgba(247, 183, 49, 0.15) !important;
+  color: #a36d00 !important;
 }
 
 .badge-danger {
-  background: rgba(235, 51, 73, 0.15);
-  color: #c41230;
+  background: rgba(235, 51, 73, 0.15) !important;
+  color: #c41230 !important;
+}
+
+.badge-secondary, .badge-grey {
+  background: rgba(108, 117, 125, 0.15) !important;
+  color: #495057 !important;
 }
 
 /* Modern Modal */
