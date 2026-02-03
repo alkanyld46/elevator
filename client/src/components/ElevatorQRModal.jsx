@@ -1,28 +1,23 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { Modal, Button, Alert, Spinner } from 'react-bootstrap'
-import { FiDownload, FiRefreshCw } from 'react-icons/fi'
+import { FiDownload } from 'react-icons/fi'
 import QRCode from 'qrcode'
 import { jsPDF } from 'jspdf'
-import api from '../utils/api'
 
-export default function ElevatorQRModal({ show, onHide, elevator, onElevatorUpdate }) {
+export default function ElevatorQRModal({ show, onHide, elevator }) {
   const canvasRef = useRef(null)
-  const [loading, setLoading] = useState(false)
-  const [regenerating, setRegenerating] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [qrReady, setQrReady] = useState(false)
 
-  useEffect(() => {
-    if (show && elevator?.qrCodeData && canvasRef.current) {
-      generateQRCode()
-    }
-  }, [show, elevator?.qrCodeData])
-
-  const generateQRCode = async () => {
+  const generateQRCode = useCallback(async () => {
     if (!canvasRef.current || !elevator?.qrCodeData) return
     
     try {
       setLoading(true)
       setError('')
+      setQrReady(false)
+      
       await QRCode.toCanvas(canvasRef.current, elevator.qrCodeData, {
         width: 250,
         margin: 2,
@@ -31,16 +26,38 @@ export default function ElevatorQRModal({ show, onHide, elevator, onElevatorUpda
           light: '#ffffff'
         }
       })
+      
+      setQrReady(true)
     } catch (err) {
       console.error('QR generation error:', err)
       setError('Failed to generate QR code')
     } finally {
       setLoading(false)
     }
-  }
+  }, [elevator?.qrCodeData])
+
+  // Generate QR code when modal opens and elevator data is available
+  useEffect(() => {
+    if (show && elevator?.qrCodeData) {
+      // Small delay to ensure canvas is mounted
+      const timer = setTimeout(() => {
+        generateQRCode()
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [show, elevator?.qrCodeData, generateQRCode])
+
+  // Reset state when modal closes
+  useEffect(() => {
+    if (!show) {
+      setQrReady(false)
+      setLoading(true)
+      setError('')
+    }
+  }, [show])
 
   const handleDownloadPDF = async () => {
-    if (!elevator || !canvasRef.current) return
+    if (!elevator || !canvasRef.current || !qrReady) return
 
     try {
       // Create PDF document
@@ -90,26 +107,6 @@ export default function ElevatorQRModal({ show, onHide, elevator, onElevatorUpda
     }
   }
 
-  const handleRegenerateQR = async () => {
-    if (!elevator?._id) return
-
-    try {
-      setRegenerating(true)
-      setError('')
-      const res = await api.post(`/elevators/${elevator._id}/regenerate-qr`)
-      
-      // Update parent component with new elevator data
-      if (onElevatorUpdate) {
-        onElevatorUpdate(res.data)
-      }
-    } catch (err) {
-      console.error('Regenerate QR error:', err)
-      setError(err.response?.data?.msg || 'Failed to regenerate QR code')
-    } finally {
-      setRegenerating(false)
-    }
-  }
-
   if (!elevator) return null
 
   return (
@@ -129,22 +126,22 @@ export default function ElevatorQRModal({ show, onHide, elevator, onElevatorUpda
           <p className="text-muted mb-0">{elevator.location}</p>
         </div>
 
-        <div className="d-flex justify-content-center mb-3">
-          {loading ? (
-            <div className="d-flex align-items-center justify-content-center" style={{ width: 250, height: 250 }}>
+        <div className="d-flex justify-content-center align-items-center mb-3" style={{ minHeight: 270, position: 'relative' }}>
+          {loading && (
+            <div className="d-flex align-items-center justify-content-center" style={{ position: 'absolute', width: 250, height: 250 }}>
               <Spinner animation="border" variant="primary" />
             </div>
-          ) : (
-            <canvas 
-              ref={canvasRef} 
-              style={{ 
-                border: '1px solid #dee2e6', 
-                borderRadius: '8px',
-                padding: '10px',
-                background: '#fff'
-              }} 
-            />
           )}
+          <canvas 
+            ref={canvasRef} 
+            style={{ 
+              border: '1px solid #dee2e6', 
+              borderRadius: '8px',
+              padding: '10px',
+              background: '#fff',
+              opacity: qrReady ? 1 : 0
+            }} 
+          />
         </div>
 
         <div className="mb-3">
@@ -153,34 +150,15 @@ export default function ElevatorQRModal({ show, onHide, elevator, onElevatorUpda
           </code>
         </div>
 
-        <div className="d-flex gap-2 justify-content-center">
-          <Button 
-            variant="primary"
-            className="btn-gradient-primary"
-            onClick={handleDownloadPDF}
-            disabled={loading}
-          >
-            <FiDownload className="me-2" />
-            Download PDF
-          </Button>
-          <Button 
-            variant="outline-secondary"
-            onClick={handleRegenerateQR}
-            disabled={regenerating}
-          >
-            {regenerating ? (
-              <>
-                <Spinner animation="border" size="sm" className="me-2" />
-                Regenerating...
-              </>
-            ) : (
-              <>
-                <FiRefreshCw className="me-2" />
-                Regenerate QR
-              </>
-            )}
-          </Button>
-        </div>
+        <Button 
+          variant="primary"
+          className="btn-gradient-primary"
+          onClick={handleDownloadPDF}
+          disabled={!qrReady}
+        >
+          <FiDownload className="me-2" />
+          Download PDF
+        </Button>
 
         <p className="text-muted small mt-3 mb-0">
           Print this QR code and place it on the elevator for technicians to scan.

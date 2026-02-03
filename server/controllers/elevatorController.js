@@ -124,23 +124,3 @@ exports.getCurrent = async (req, res) => {
         res.status(500).json({ msg: 'Server error', error: err.message })
     }
 }
-
-// @route POST /api/elevators/:id/regenerate-qr
-// Regenerates the QR code data for an elevator
-exports.regenerateQrCode = async (req, res) => {
-    try {
-        const elevator = await Elevator.findById(req.params.id)
-        if (!elevator) {
-            return res.status(404).json({ msg: 'Elevator not found' })
-        }
-
-        // Generate new QR code data
-        elevator.qrCodeData = Elevator.generateQrCodeData()
-        await elevator.save()
-
-        res.json(elevator)
-    } catch (err) {
-        console.error('Regenerate QR Error:', err)
-        res.status(500).json({ msg: 'Server error', error: err.message })
-    }
-}

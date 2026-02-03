@@ -141,15 +141,6 @@ export default function Elevators() {
     setQrElevator(null)
   }, [])
 
-  const handleElevatorUpdate = useCallback((updatedElevator) => {
-    // Update the elevator in the list
-    setList(prev => prev.map(el => 
-      el._id === updatedElevator._id ? updatedElevator : el
-    ))
-    // Update the QR modal elevator
-    setQrElevator(updatedElevator)
-  }, [])
-
   // Memoized filtered and paginated data
   const { filtered, totalPages, paged } = useMemo(() => {
     const filtered = list.filter(el =>
@@ -446,7 +437,6 @@ export default function Elevators() {
         show={showQRModal}
         onHide={handleQRModalClose}
         elevator={qrElevator}
-        onElevatorUpdate={handleElevatorUpdate}
       />
     </Container>
   )
