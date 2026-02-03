@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="256" fill="#4f46e5"/>
+  
+  <!-- Elevator doors frame -->
+  <rect x="120" y="100" width="272" height="340" rx="12" fill="#ffffff"/>
+  
+  <!-- Left door -->
+  <rect x="135" y="115" width="115" height="310" rx="6" fill="#e0e7ff"/>
+  
+  <!-- Right door -->
+  <rect x="262" y="115" width="115" height="310" rx="6" fill="#c7d2fe"/>
+  
+  <!-- Door gap line -->
+  <line x1="256" y1="115" x2="256" y2="425" stroke="#4f46e5" stroke-width="3"/>
+  
+  <!-- Floor indicator panel -->
+  <rect x="200" y="70" width="112" height="35" rx="6" fill="#1e1b4b"/>
+  
+  <!-- Floor number -->
+  <text x="256" y="95" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#22c55e" text-anchor="middle">1</text>
+  
+  <!-- Up arrow on left door -->
+  <polygon points="192,200 177,230 207,230" fill="#4f46e5"/>
+  <rect x="187" y="230" width="10" height="30" fill="#4f46e5"/>
+  
+  <!-- Down arrow on right door -->
+  <rect x="315" y="200" width="10" height="30" fill="#4f46e5"/>
+  <polygon points="320,230 305,230 320,260 335,230" fill="#4f46e5"/>
+  
+  <!-- Wrench icon (maintenance) -->
+  <g transform="translate(340, 350) scale(0.8)">
+    <path d="M60,20 L45,35 L50,40 L40,50 L30,40 L35,35 L20,20 C10,30 10,45 20,55 C30,65 50,65 60,55 L75,70 L85,60 L70,45 C80,35 80,15 70,5 C65,0 55,0 50,5 L60,20 Z" fill="#fbbf24"/>
+  </g>
+</svg>
