@@ -413,8 +413,8 @@ export default function Dashboard() {
       </Card>
 
       {/* Details Modal */}
-      <Modal 
-        show={!!selected} 
+      <Modal
+        show={!!selected}
         onHide={handleCloseModal}
         centered
         className="modal-modern"
@@ -432,7 +432,7 @@ export default function Dashboard() {
           <div className="mb-3">
             <strong>Assigned Month:</strong> <span className="text-muted">{selected?.assignedMonth && new Date(selected.assignedMonth).toLocaleDateString()}</span>
           </div>
-          
+
           {attachmentError && (
             <Alert variant="warning" className="mb-3">{attachmentError}</Alert>
           )}

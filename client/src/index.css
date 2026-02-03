@@ -259,9 +259,10 @@ code {
   color: #c41230 !important;
 }
 
-.badge-secondary, .badge-grey {
+.badge-secondary,
+.badge-grey {
   background: rgba(108, 117, 125, 0.15) !important;
-  color: #495057 !important;
+  color: #2de60c !important;
 }
 
 /* Modern Modal */
